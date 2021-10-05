@@ -1,0 +1,8 @@
+﻿  DDSTextureLoader.cpp
+  DrawableGameObject.cpp
+  main.cpp
+C:\Users\antho\Documents\GitHub\Advanced-Graphics-Realtime-Rendering-Module\FrameworkDX11\main.cpp(547,7): warning C4189: 'xPos': local variable is initialized but not referenced
+C:\Users\antho\Documents\GitHub\Advanced-Graphics-Realtime-Rendering-Module\FrameworkDX11\main.cpp(548,7): warning C4189: 'yPos': local variable is initialized but not referenced
+  Generating Code...
+DDSTextureLoader.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+  FrameworkDX11.vcxproj -> C:\Users\antho\Documents\GitHub\Advanced-Graphics-Realtime-Rendering-Module\Debug\FrameworkDX11.exe
