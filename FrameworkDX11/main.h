@@ -12,10 +12,18 @@
 #include <iostream>
 
 #include "DrawableGameObject.h"
+#include "Camera.h"
 #include "structures.h"
 
 #include <vector>
 
 using namespace std;
 
-typedef vector<DrawableGameObject*> vecDrawables;
+// Forward declarations
+HRESULT		InitWindow(HINSTANCE hInstance, int nCmdShow);
+HRESULT		InitDevice();
+HRESULT		InitMesh();
+HRESULT		InitWorld(int width, int height);
+void		CleanupDevice();
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void		Render();

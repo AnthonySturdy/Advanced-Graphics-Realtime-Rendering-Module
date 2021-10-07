@@ -16,20 +16,6 @@
 
 #include "main.h"
 
-DirectX::XMFLOAT4 g_EyePosition(0.0f, 0, -3, 1.0f);
-
-//--------------------------------------------------------------------------------------
-// Forward declarations
-//--------------------------------------------------------------------------------------
-HRESULT		InitWindow(HINSTANCE hInstance, int nCmdShow);
-HRESULT		InitDevice();
-HRESULT		InitMesh();
-HRESULT		InitWorld(int width, int height);
-void		CleanupDevice();
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
-void		Render();
-
-
 
 //--------------------------------------------------------------------------------------
 // Global Variables
@@ -57,14 +43,12 @@ ID3D11Buffer*           g_pConstantBuffer = nullptr;
 
 ID3D11Buffer*           g_pLightConstantBuffer = nullptr;
 
-XMMATRIX                g_View;
-XMMATRIX                g_Projection;
-
 int						g_viewWidth;
 int						g_viewHeight;
+float                   elapsedTime = 0.0f;
 
-DrawableGameObject		g_GameObject;
-
+std::vector<DrawableGameObject>  g_GameObjects(20);
+std::shared_ptr<Camera> activeCamera;
 
 //--------------------------------------------------------------------------------------
 // Entry point to the program. Initializes everything and goes into a message processing 
@@ -135,7 +119,7 @@ HRESULT InitWindow( HINSTANCE hInstance, int nCmdShow )
 	g_viewHeight = 720;
 
     AdjustWindowRect( &rc, WS_OVERLAPPEDWINDOW, FALSE );
-    g_hWnd = CreateWindow( L"TutorialWindowClass", L"Direct3D 11 Tutorial 5",
+    g_hWnd = CreateWindow( L"TutorialWindowClass", L"Advanced Graphics and Real-time Rendering // Anthony Sturdy",
                            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                            CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
                            nullptr );
@@ -381,9 +365,11 @@ HRESULT InitDevice()
 		return hr;
 	}
 
-	hr = g_GameObject.initMesh(g_pd3dDevice, g_pImmediateContext);
-	if (FAILED(hr))
-		return hr;
+    for (DrawableGameObject& go : g_GameObjects) {
+        hr = go.initMesh(g_pd3dDevice, g_pImmediateContext);
+        if (FAILED(hr))
+            return hr;
+    }
 
     return S_OK;
 }
@@ -486,14 +472,11 @@ HRESULT		InitMesh()
 // ***************************************************************************************
 HRESULT		InitWorld(int width, int height)
 {
-	// Initialize the view matrix
-	XMVECTOR Eye = XMLoadFloat4(&g_EyePosition);
-	XMVECTOR At = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
-	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-	g_View = XMMatrixLookAtLH(Eye, At, Up);
-
-	// Initialize the projection matrix
-	g_Projection = XMMatrixPerspectiveFovLH(XM_PIDIV2, width / (FLOAT)height, 0.01f, 100.0f);
+    activeCamera = std::make_shared<Camera>(XMFLOAT4(-10.0f, 10.0f, -10.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), 
+                                            Camera::CAMERA_TYPE::PERSPECTIVE, 
+                                            width / (float)height, 
+                                            90.0f, 
+                                            0.01f, 100.0f);
 
 	return S_OK;
 }
@@ -504,7 +487,11 @@ HRESULT		InitWorld(int width, int height)
 //--------------------------------------------------------------------------------------
 void CleanupDevice()
 {
-    g_GameObject.cleanup();
+    for (DrawableGameObject& go : g_GameObjects) {
+        go.cleanup();
+    }
+
+    activeCamera.reset();
 
     // Remove any bound render target or depth/stencil buffer
     ID3D11RenderTargetView* nullViews[] = { nullptr };
@@ -584,15 +571,14 @@ void setupLightForRender()
     Light light;
     light.Enabled = static_cast<int>(true);
     light.LightType = PointLight;
-    light.Color = XMFLOAT4(Colors::White);
+    light.Color = XMFLOAT4(Colors::Green);
     light.SpotAngle = XMConvertToRadians(45.0f);
     light.ConstantAttenuation = 1.0f;
     light.LinearAttenuation = 1;
     light.QuadraticAttenuation = 1;
 
-
     // set up the light
-    XMFLOAT4 LightPosition(g_EyePosition);
+    XMFLOAT4 LightPosition(10.0f, 0, -10.0f, 1.0f);
     light.Position = LightPosition;
     XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = XMVector3Normalize(LightDirection);
@@ -616,10 +602,11 @@ float calculateDeltaTime()
     timeStart = timeCur;
 
     float FPS60 = 1.0f / 60.0f;
-    static float cummulativeTime = 0;
 
     // cap the framerate at 60 fps 
+    static float cummulativeTime = 0;
     cummulativeTime += deltaTime;
+    elapsedTime += deltaTime;
     if (cummulativeTime >= FPS60) {
         cummulativeTime = cummulativeTime - FPS60;
     }
@@ -645,37 +632,41 @@ void Render()
     // Clear the depth buffer to 1.0 (max depth)
     g_pImmediateContext->ClearDepthStencilView( g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0 );
 
-	// Update the cube transform, material etc. 
-	g_GameObject.update(t, g_pImmediateContext);
+    // Loop all GameObjects
+    for(DrawableGameObject& go : g_GameObjects) {
+        // Animate gameObjects
+        for (int i = 0; i < g_GameObjects.size(); i++) {
+            g_GameObjects[i].setPosition(XMFLOAT3((i - 10) * 1.25f, std::sin((elapsedTime + i) * 5) * 1.25f, std::cos((elapsedTime + i) * 5) * 1.25f));
+        }
 
-    // get the game object world transform
-	XMMATRIX mGO = XMLoadFloat4x4(g_GameObject.getTransform());
+        // Update the cube transform, material etc. 
+        go.update(t, g_pImmediateContext);
 
-    // store this and the view / projection in a constant buffer for the vertex shader to use
-    ConstantBuffer cb1;
-	cb1.mWorld = XMMatrixTranspose( mGO);
-	cb1.mView = XMMatrixTranspose( g_View );
-	cb1.mProjection = XMMatrixTranspose( g_Projection );
-	cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
-	g_pImmediateContext->UpdateSubresource( g_pConstantBuffer, 0, nullptr, &cb1, 0, 0 );
+        // get the game object world transform
+        XMMATRIX mGO = XMLoadFloat4x4(go.getTransform());
 
-    
-    setupLightForRender();
+        // store this and the view / projection in a constant buffer for the vertex shader to use
+        ConstantBuffer cb1;
+        cb1.mWorld = XMMatrixTranspose(mGO);
+        cb1.mView = XMMatrixTranspose(activeCamera->CalculateViewMatrix());
+        cb1.mProjection = XMMatrixTranspose(activeCamera->CalculateProjectionMatrix());
+        cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
+        g_pImmediateContext->UpdateSubresource(g_pConstantBuffer, 0, nullptr, &cb1, 0, 0);
 
-    // Render the cube
-	g_pImmediateContext->VSSetShader( g_pVertexShader, nullptr, 0 );
-	g_pImmediateContext->VSSetConstantBuffers( 0, 1, &g_pConstantBuffer );
+        setupLightForRender();
 
-    g_pImmediateContext->PSSetShader( g_pPixelShader, nullptr, 0 );
-	g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pLightConstantBuffer);
-    ID3D11Buffer* materialCB = g_GameObject.getMaterialConstantBuffer();
-    g_pImmediateContext->PSSetConstantBuffers(1, 1, &materialCB);
+        // Render the cube
+        g_pImmediateContext->VSSetShader(g_pVertexShader, nullptr, 0);
+        g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pConstantBuffer);
 
-    g_GameObject.draw(g_pImmediateContext);
+        g_pImmediateContext->PSSetShader(g_pPixelShader, nullptr, 0);
+        g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pLightConstantBuffer);
+        ID3D11Buffer* materialCB = go.getMaterialConstantBuffer();
+        g_pImmediateContext->PSSetConstantBuffers(1, 1, &materialCB);
+
+        go.draw(g_pImmediateContext);
+    }
 
     // Present our back buffer to our front buffer
     g_pSwapChain->Present( 0, 0 );
 }
-
-
-
