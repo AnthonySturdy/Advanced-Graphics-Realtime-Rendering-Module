@@ -68,6 +68,8 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         return 0;
     }
 
+    Start();
+
     // Main message loop
     MSG msg = {0};
     while( WM_QUIT != msg.message )
@@ -79,6 +81,11 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
         }
         else
         {
+            float t = CalculateDeltaTime(); // Capped at 60 fps
+            if (t == 0.0f)
+                continue;
+
+            Update();
             Render();
         }
     }
@@ -349,6 +356,18 @@ HRESULT InitDevice()
     vp.TopLeftY = 0;
     g_pImmediateContext->RSSetViewports( 1, &vp );
 
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplWin32_Init(g_hWnd);
+    ImGui_ImplDX11_Init(g_pd3dDevice, g_pImmediateContext);
+
 	hr = InitMesh();
 	if (FAILED(hr))
 	{
@@ -357,7 +376,7 @@ HRESULT InitDevice()
 		return hr;
 	}
 
-	hr = InitWorld(width, height);
+	hr = InitCamera(width, height);
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
@@ -366,7 +385,7 @@ HRESULT InitDevice()
 	}
 
     for (DrawableGameObject& go : g_GameObjects) {
-        hr = go.initMesh(g_pd3dDevice, g_pImmediateContext);
+        hr = go.InitMesh(g_pd3dDevice, g_pImmediateContext);
         if (FAILED(hr))
             return hr;
     }
@@ -452,8 +471,6 @@ HRESULT		InitMesh()
 	if (FAILED(hr))
 		return hr;
 
-
-
 	// Create the light constant buffer
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(LightPropertiesConstantBuffer);
@@ -470,12 +487,12 @@ HRESULT		InitMesh()
 // ***************************************************************************************
 // InitWorld
 // ***************************************************************************************
-HRESULT		InitWorld(int width, int height)
+HRESULT		InitCamera(int width, int height)
 {
     activeCamera = std::make_shared<Camera>(XMFLOAT4(-10.0f, 10.0f, -10.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f), 
                                             Camera::CAMERA_TYPE::PERSPECTIVE, 
                                             width / (float)height, 
-                                            90.0f, 
+                                            DirectX::XM_PIDIV2, 
                                             0.01f, 100.0f);
 
 	return S_OK;
@@ -488,10 +505,15 @@ HRESULT		InitWorld(int width, int height)
 void CleanupDevice()
 {
     for (DrawableGameObject& go : g_GameObjects) {
-        go.cleanup();
+        go.Cleanup();
     }
 
     activeCamera.reset();
+
+    // Cleanup
+    ImGui_ImplDX11_Shutdown();
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
 
     // Remove any bound render target or depth/stencil buffer
     ID3D11RenderTargetView* nullViews[] = { nullptr };
@@ -538,6 +560,11 @@ LRESULT CALLBACK WndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam 
 {
     PAINTSTRUCT ps;
     HDC hdc;
+
+    // Forward declare message handler from imgui_impl_win32.cpp
+    extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+        return true;
 
     switch( message )
     {
@@ -590,7 +617,7 @@ void setupLightForRender()
     g_pImmediateContext->UpdateSubresource(g_pLightConstantBuffer, 0, nullptr, &lightProperties, 0, 0);
 }
 
-float calculateDeltaTime()
+float CalculateDeltaTime()
 {
     // Update our time
     static float deltaTime = 0.0f;
@@ -617,33 +644,50 @@ float calculateDeltaTime()
     return deltaTime;
 }
 
-//--------------------------------------------------------------------------------------
+// Called first after libraries are initialised
+void Start() {
+
+}
+
+// Called once per frame
+void Update() {
+    // Loop all GameObjects
+    for (DrawableGameObject& go : g_GameObjects) {
+        for (int i = 0; i < g_GameObjects.size(); i++) {
+            g_GameObjects[i].SetPosition(XMFLOAT3((i - 10) * 1.25f, std::sin((elapsedTime + i) * 5) * 1.25f, std::cos((elapsedTime + i) * 5) * 1.25f));
+        }
+
+        // Update the cube transform, material etc. 
+        go.Update(CalculateDeltaTime(), g_pImmediateContext);
+    }
+}
+
 // Render a frame
-//--------------------------------------------------------------------------------------
 void Render()
 {
-    float t = calculateDeltaTime(); // capped at 60 fps
-    if (t == 0.0f)
-        return;
-
     // Clear the back buffer
     g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::MidnightBlue );
 
     // Clear the depth buffer to 1.0 (max depth)
     g_pImmediateContext->ClearDepthStencilView( g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0 );
 
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+
+    // Render FPS window
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+    ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+
+    activeCamera->RenderGUIControls();
+
     // Loop all GameObjects
     for(DrawableGameObject& go : g_GameObjects) {
-        // Animate gameObjects
-        for (int i = 0; i < g_GameObjects.size(); i++) {
-            g_GameObjects[i].setPosition(XMFLOAT3((i - 10) * 1.25f, std::sin((elapsedTime + i) * 5) * 1.25f, std::cos((elapsedTime + i) * 5) * 1.25f));
-        }
-
-        // Update the cube transform, material etc. 
-        go.update(t, g_pImmediateContext);
-
         // get the game object world transform
-        XMMATRIX mGO = XMLoadFloat4x4(go.getTransform());
+        XMMATRIX mGO = XMLoadFloat4x4(go.GetTransform());
 
         // store this and the view / projection in a constant buffer for the vertex shader to use
         ConstantBuffer cb1;
@@ -661,12 +705,16 @@ void Render()
 
         g_pImmediateContext->PSSetShader(g_pPixelShader, nullptr, 0);
         g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pLightConstantBuffer);
-        ID3D11Buffer* materialCB = go.getMaterialConstantBuffer();
+        ID3D11Buffer* materialCB = go.GetMaterialConstantBuffer();
         g_pImmediateContext->PSSetConstantBuffers(1, 1, &materialCB);
 
-        go.draw(g_pImmediateContext);
+        go.Render(g_pImmediateContext);
     }
 
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
     // Present our back buffer to our front buffer
-    g_pSwapChain->Present( 0, 0 );
+    g_pSwapChain->Present(0, 0);
 }

@@ -6,6 +6,7 @@
 #include <DirectXCollision.h>
 #include <directxmath.h>
 #include <iostream>
+#include "imgui/imgui.h"
 
 class Camera {
 public:
@@ -26,7 +27,9 @@ private:
 	float m_FarPlane;
 
 	DirectX::XMMATRIX m_ViewMatrix;
+	bool m_DirtyViewMatrix;
 	DirectX::XMMATRIX m_ProjectionMatrix;
+	bool m_DirtyProjectionMatrix;
 
 public:
 	Camera(DirectX::XMFLOAT4 position, DirectX::XMFLOAT4 lookAt, DirectX::XMFLOAT4 up, CAMERA_TYPE cameraType, float aspectRatio, float fov, float nearPlane, float farPlane);
@@ -35,6 +38,9 @@ public:
 	DirectX::XMFLOAT4 GetCameraPosition()			{ return m_Position; }
 	DirectX::XMFLOAT4 GetCameraLookAt()				{ return m_LookAt; }
 	DirectX::XMFLOAT4 GetCameraUp()					{ return m_Up; }
+	float GetFOV()									{ return m_FOV; }
+	float GetNearPlane()							{ return m_NearPlane; }
+	float GetFarPlane()								{ return m_FarPlane; }
 
 	DirectX::XMMATRIX CalculateViewMatrix();
 	DirectX::XMMATRIX CalculateProjectionMatrix();
@@ -42,4 +48,9 @@ public:
 	void SetCameraPosition(DirectX::XMFLOAT4 val);
 	void SetCameraLookAt(DirectX::XMFLOAT4 val);
 	void SetCameraUp(DirectX::XMFLOAT4 val);
+	void SetFOV(float val);
+	void SetNearPlane(float val);
+	void SetFarPlane(float val);
+
+	void RenderGUIControls();
 };

@@ -25,18 +25,18 @@ public:
 	DrawableGameObject();
 	~DrawableGameObject();
 
-	void cleanup();
+	void Cleanup();
 
-	HRESULT								initMesh(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pContext);
-	void								update(float t, ID3D11DeviceContext* pContext);
-	void								draw(ID3D11DeviceContext* pContext);
-	ID3D11Buffer*						getVertexBuffer() { return m_pVertexBuffer; }
-	ID3D11Buffer*						getIndexBuffer() { return m_pIndexBuffer; }
-	ID3D11ShaderResourceView**			getTextureResourceView() { return &m_pTextureResourceView; 	}
-	XMFLOAT4X4*							getTransform() { return &m_World; }
-	ID3D11SamplerState**				getTextureSamplerState() { return &m_pSamplerLinear; }
-	ID3D11Buffer*						getMaterialConstantBuffer() { return m_pMaterialConstantBuffer;}
-	void								setPosition(XMFLOAT3 position);
+	HRESULT								InitMesh(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pContext);
+	void								Update(float t, ID3D11DeviceContext* pContext);
+	void								Render(ID3D11DeviceContext* pContext);
+	ID3D11Buffer*						GetVertexBuffer() { return m_pVertexBuffer; }
+	ID3D11Buffer*						GetIndexBuffer() { return m_pIndexBuffer; }
+	ID3D11ShaderResourceView**			GetTextureResourceView() { return &m_pTextureResourceView; 	}
+	XMFLOAT4X4*							GetTransform() { return &m_World; }
+	ID3D11SamplerState**				GetTextureSamplerState() { return &m_pSamplerLinear; }
+	ID3D11Buffer*						GetMaterialConstantBuffer() { return m_pMaterialConstantBuffer;}
+	void								SetPosition(XMFLOAT3 position);
 
 private:
 	

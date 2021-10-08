@@ -19,10 +19,10 @@ DrawableGameObject::DrawableGameObject()
 
 DrawableGameObject::~DrawableGameObject()
 {
-	cleanup();
+	Cleanup();
 }
 
-void DrawableGameObject::cleanup()
+void DrawableGameObject::Cleanup()
 {
 	if (m_pVertexBuffer)
 		m_pVertexBuffer->Release();
@@ -45,7 +45,7 @@ void DrawableGameObject::cleanup()
 	m_pMaterialConstantBuffer = nullptr;
 }
 
-HRESULT DrawableGameObject::initMesh(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pContext)
+HRESULT DrawableGameObject::InitMesh(ID3D11Device* pd3dDevice, ID3D11DeviceContext* pContext)
 {
 	// Create vertex buffer
 	SimpleVertex vertices[] =
@@ -168,12 +168,12 @@ HRESULT DrawableGameObject::initMesh(ID3D11Device* pd3dDevice, ID3D11DeviceConte
 	return hr;
 }
 
-void DrawableGameObject::setPosition(XMFLOAT3 position)
+void DrawableGameObject::SetPosition(XMFLOAT3 position)
 {
 	m_position = position;
 }
 
-void DrawableGameObject::update(float t, ID3D11DeviceContext* pContext)
+void DrawableGameObject::Update(float t, ID3D11DeviceContext* pContext)
 {
 	static float cummulativeTime = 0;
 	cummulativeTime += t;
@@ -188,7 +188,7 @@ void DrawableGameObject::update(float t, ID3D11DeviceContext* pContext)
 	pContext->UpdateSubresource(m_pMaterialConstantBuffer, 0, nullptr, &m_material, 0, 0);
 }
 
-void DrawableGameObject::draw(ID3D11DeviceContext* pContext)
+void DrawableGameObject::Render(ID3D11DeviceContext* pContext)
 {
 	
 	pContext->PSSetShaderResources(0, 1, &m_pTextureResourceView);
