@@ -1,7 +1,7 @@
 #include "Camera.h"
 
 Camera::Camera(DirectX::XMFLOAT4 position, DirectX::XMFLOAT4 lookAt, DirectX::XMFLOAT4 up, CAMERA_TYPE cameraType, float aspectRatio, float fov, float nearPlane, float farPlane) :
-	m_Position(position), m_LookAt(lookAt), m_Up(up), m_CameraType(cameraType), m_AspectRatio(aspectRatio), m_FOV(fov), m_NearPlane(nearPlane), m_FarPlane(farPlane), m_DirtyViewMatrix(true), m_DirtyProjectionMatrix(true)
+	m_Position(position), m_LookAt(lookAt), m_Up(up), m_CameraType(cameraType), m_AspectRatio(aspectRatio), m_FOV(fov), m_NearPlane(nearPlane), m_FarPlane(farPlane), m_DirtyViewMatrix(true), m_DirtyProjectionMatrix(true), m_BackgroundColour(DirectX::Colors::MidnightBlue)
 { }
 
 Camera::~Camera() { }
@@ -36,6 +36,10 @@ void Camera::SetFarPlane(float val) {
 	m_DirtyProjectionMatrix = true;
 }
 
+void Camera::SetBackgroundColour(DirectX::XMFLOAT3 val) {
+	m_BackgroundColour = val;
+}
+
 void Camera::RenderGUIControls() {
 	ImGui::Begin("Active Camera Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -52,6 +56,8 @@ void Camera::RenderGUIControls() {
 
 	ImGui::DragFloat("Near Plane", &m_NearPlane, 0.01f, 0.1f, 100.0f);
 	ImGui::DragFloat("Far Plane", &m_FarPlane, 0.1f, 0.2f, 5000.0f);
+
+	ImGui::ColorEdit3("Background Colour", &m_BackgroundColour.x);
 
 	ImGui::End();
 

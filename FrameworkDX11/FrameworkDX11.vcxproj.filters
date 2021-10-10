@@ -29,6 +29,7 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>External\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -61,6 +62,7 @@
     <ClInclude Include="imgui\imstb_truetype.h">
       <Filter>External\imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Tutorial01.rc" />

@@ -33,11 +33,6 @@ IDXGISwapChain1*        g_pSwapChain1 = nullptr;
 ID3D11RenderTargetView* g_pRenderTargetView = nullptr;
 ID3D11Texture2D*        g_pDepthStencil = nullptr;
 ID3D11DepthStencilView* g_pDepthStencilView = nullptr;
-ID3D11VertexShader*     g_pVertexShader = nullptr;
-
-ID3D11PixelShader*      g_pPixelShader = nullptr;
-
-ID3D11InputLayout*      g_pVertexLayout = nullptr;
 
 ID3D11Buffer*           g_pConstantBuffer = nullptr;
 
@@ -385,9 +380,20 @@ HRESULT InitDevice()
 	}
 
     for (DrawableGameObject& go : g_GameObjects) {
+        // Initialise Mesh
         hr = go.InitMesh(g_pd3dDevice, g_pImmediateContext);
         if (FAILED(hr))
             return hr;
+
+        // Initialise shader
+        D3D11_INPUT_ELEMENT_DESC layout[] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        };
+        UINT numElements = ARRAYSIZE(layout);
+        go.InitShader(g_pd3dDevice, L"shader.fx", L"shader.fx", layout, numElements);
     }
 
     return S_OK;
@@ -396,78 +402,15 @@ HRESULT InitDevice()
 // ***************************************************************************************
 // InitMesh
 // ***************************************************************************************
-
 HRESULT		InitMesh()
 {
-	// Compile the vertex shader
-	ID3DBlob* pVSBlob = nullptr;
-	HRESULT hr = CompileShaderFromFile(L"shader.fx", "VS", "vs_4_0", &pVSBlob);
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the vertex shader
-	hr = g_pd3dDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &g_pVertexShader);
-	if (FAILED(hr))
-	{
-		pVSBlob->Release();
-		return hr;
-	}
-
-	// Define the input layout
-	D3D11_INPUT_ELEMENT_DESC layout[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	};
-	UINT numElements = ARRAYSIZE(layout);
-
-	// Create the input layout
-	hr = g_pd3dDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(),
-		pVSBlob->GetBufferSize(), &g_pVertexLayout);
-	pVSBlob->Release();
-	if (FAILED(hr))
-		return hr;
-
-	// Set the input layout
-	g_pImmediateContext->IASetInputLayout(g_pVertexLayout);
-
-	// Compile the pixel shader
-	ID3DBlob* pPSBlob = nullptr;
-	hr = CompileShaderFromFile(L"shader.fx", "PS", "ps_4_0", &pPSBlob);
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr,
-			L"The FX file cannot be compiled.  Please run this executable from the directory that contains the FX file.", L"Error", MB_OK);
-		return hr;
-	}
-
-	// Create the pixel shader
-	hr = g_pd3dDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &g_pPixelShader);
-	pPSBlob->Release();
-	if (FAILED(hr))
-		return hr;
-
-
 	// Create the constant buffer
     D3D11_BUFFER_DESC bd = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(SimpleVertex) * 24;
-    bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bd.CPUAccessFlags = 0;
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(WORD) * 36;        // 36 vertices needed for 12 triangles in a triangle list
-    bd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    bd.CPUAccessFlags = 0;
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.ByteWidth = sizeof(ConstantBuffer);
 	bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bd.CPUAccessFlags = 0;
-	hr = g_pd3dDevice->CreateBuffer(&bd, nullptr, &g_pConstantBuffer);
+	HRESULT hr = g_pd3dDevice->CreateBuffer(&bd, nullptr, &g_pConstantBuffer);
 	if (FAILED(hr))
 		return hr;
 
@@ -526,10 +469,7 @@ void CleanupDevice()
 
     if (g_pLightConstantBuffer)
         g_pLightConstantBuffer->Release();
-    if (g_pVertexLayout) g_pVertexLayout->Release();
     if( g_pConstantBuffer ) g_pConstantBuffer->Release();
-    if( g_pVertexShader ) g_pVertexShader->Release();
-    if( g_pPixelShader ) g_pPixelShader->Release();
     if( g_pDepthStencil ) g_pDepthStencil->Release();
     if( g_pDepthStencilView ) g_pDepthStencilView->Release();
     if( g_pRenderTargetView ) g_pRenderTargetView->Release();
@@ -598,7 +538,7 @@ void setupLightForRender()
     Light light;
     light.Enabled = static_cast<int>(true);
     light.LightType = PointLight;
-    light.Color = XMFLOAT4(Colors::Green);
+    light.Color = XMFLOAT4(Colors::White);
     light.SpotAngle = XMConvertToRadians(45.0f);
     light.ConstantAttenuation = 1.0f;
     light.LinearAttenuation = 1;
@@ -666,7 +606,9 @@ void Update() {
 void Render()
 {
     // Clear the back buffer
-    g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, Colors::MidnightBlue );
+    XMFLOAT3 camCol = activeCamera->GetBackgroundColour();
+    XMFLOAT4 backgroundCol = XMFLOAT4(camCol.x, camCol.y, camCol.z, 1.0f);
+    g_pImmediateContext->ClearRenderTargetView( g_pRenderTargetView, &backgroundCol.x);
 
     // Clear the depth buffer to 1.0 (max depth)
     g_pImmediateContext->ClearDepthStencilView( g_pDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0 );
@@ -689,6 +631,12 @@ void Render()
         // get the game object world transform
         XMMATRIX mGO = XMLoadFloat4x4(go.GetTransform());
 
+        // Get the game object's shader
+        Shader* shader = go.GetShader().get();
+
+        // Set active vertex layout
+        g_pImmediateContext->IASetInputLayout(shader->GetVertexLayout());
+
         // store this and the view / projection in a constant buffer for the vertex shader to use
         ConstantBuffer cb1;
         cb1.mWorld = XMMatrixTranspose(mGO);
@@ -700,10 +648,10 @@ void Render()
         setupLightForRender();
 
         // Render the cube
-        g_pImmediateContext->VSSetShader(g_pVertexShader, nullptr, 0);
+        g_pImmediateContext->VSSetShader(shader->GetVertexShader(), nullptr, 0);
         g_pImmediateContext->VSSetConstantBuffers(0, 1, &g_pConstantBuffer);
 
-        g_pImmediateContext->PSSetShader(g_pPixelShader, nullptr, 0);
+        g_pImmediateContext->PSSetShader(shader->GetPixelShader(), nullptr, 0);
         g_pImmediateContext->PSSetConstantBuffers(2, 1, &g_pLightConstantBuffer);
         ID3D11Buffer* materialCB = go.GetMaterialConstantBuffer();
         g_pImmediateContext->PSSetConstantBuffers(1, 1, &materialCB);

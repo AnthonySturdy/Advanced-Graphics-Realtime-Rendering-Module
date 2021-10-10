@@ -168,6 +168,11 @@ HRESULT DrawableGameObject::InitMesh(ID3D11Device* pd3dDevice, ID3D11DeviceConte
 	return hr;
 }
 
+void DrawableGameObject::InitShader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements) {
+	// Make shader
+	m_Shader = std::make_shared<Shader>(device, vertexShaderPath, pixelShaderPath, vertexLayout, numElements);
+}
+
 void DrawableGameObject::SetPosition(XMFLOAT3 position)
 {
 	m_position = position;

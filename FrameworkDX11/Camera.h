@@ -25,6 +25,7 @@ private:
 	float m_AspectRatio;
 	float m_NearPlane;
 	float m_FarPlane;
+	DirectX::XMFLOAT3 m_BackgroundColour;
 
 	DirectX::XMMATRIX m_ViewMatrix;
 	bool m_DirtyViewMatrix;
@@ -41,6 +42,7 @@ public:
 	float GetFOV()									{ return m_FOV; }
 	float GetNearPlane()							{ return m_NearPlane; }
 	float GetFarPlane()								{ return m_FarPlane; }
+	DirectX::XMFLOAT3 GetBackgroundColour()			{ return m_BackgroundColour; }
 
 	DirectX::XMMATRIX CalculateViewMatrix();
 	DirectX::XMMATRIX CalculateProjectionMatrix();
@@ -51,6 +53,7 @@ public:
 	void SetFOV(float val);
 	void SetNearPlane(float val);
 	void SetFarPlane(float val);
+	void SetBackgroundColour(DirectX::XMFLOAT3 val);
 
 	void RenderGUIControls();
 };

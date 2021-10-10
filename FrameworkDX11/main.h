@@ -17,6 +17,7 @@
 
 #include "DrawableGameObject.h"
 #include "Camera.h"
+#include "Shader.h"
 #include "structures.h"
 
 using namespace std;

@@ -364,6 +364,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="main.h" />
     <CLInclude Include="resource.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="structures.h" />
     <ResourceCompile Include="Tutorial01.rc" />
   </ItemGroup>
@@ -379,6 +380,7 @@
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\stone.dds" />
