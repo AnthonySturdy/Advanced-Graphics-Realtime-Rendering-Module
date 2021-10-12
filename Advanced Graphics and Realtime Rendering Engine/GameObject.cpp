@@ -135,12 +135,27 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	return hr;
 }
 
-HRESULT GameObject::InitShader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements) {
-	return E_NOTIMPL;
+void GameObject::InitShader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements) {
+	m_shader = std::make_shared<Shader>(device, vertexShaderPath, pixelShaderPath, vertexLayout, numElements);
 }
 
 void GameObject::Update(float t, ID3D11DeviceContext* context) {
+	static float cummulativeTime = 0;
+	cummulativeTime += t;
+
+	// Cube:  Rotate around origin
+	XMMATRIX mSpin = XMMatrixRotationY(cummulativeTime / 10.0f);
+
+	XMMATRIX mTranslate = XMMatrixTranslation(m_position.x, m_position.y, m_position.z);
+	XMMATRIX world = mSpin * mTranslate;
+	XMStoreFloat4x4(&m_world, world);
+
+	context->UpdateSubresource(m_materialConstantBuffer.Get(), 0, nullptr, &m_material, 0, 0);
 }
 
 void GameObject::Render(ID3D11DeviceContext* context) {
+	context->PSSetShaderResources(0, 1, &m_textureResourceView);
+	context->PSSetSamplers(0, 1, &m_samplerLinear);
+	
+	context->DrawIndexed(NUM_VERTICES, 0, 0);
 }

@@ -5,6 +5,12 @@
       <UniqueIdentifier>4d609bf8-6daf-4e95-b64e-0b1b398ef59b</UniqueIdentifier>
       <Extensions>ico;cur;bmp;dds;dlg;fbx;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{689bc093-047d-40c2-b60c-9de51f21c983}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External\imgui">
+      <UniqueIdentifier>{16ea9151-aa5a-4cef-8c37-01fdfb9c89ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -12,12 +18,61 @@
     <ClInclude Include="StepTimer.h" />
     <ClInclude Include="Structures.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Shader.h" />
+    <ClInclude Include="Camera.h" />
+    <ClInclude Include="External\imgui\imconfig.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imgui.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imgui_impl_dx11.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imgui_impl_win32.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imgui_internal.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imstb_rectpack.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imstb_textedit.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\imstb_truetype.h">
+      <Filter>External\imgui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="External\imgui\imgui.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_demo.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_draw.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_impl_dx11.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_impl_win32.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_tables.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\imgui_widgets.cpp">
+      <Filter>External\imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

@@ -26,8 +26,12 @@ void Game::Initialize(HWND window, int width, int height)
 
     CreateResources();
 
+    InitialiseImGui(window);
+
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
+
+    go = std::make_shared<GameObject>();
 }
 
 // Executes the basic game loop.
@@ -61,8 +65,30 @@ void Game::Render()
 
     Clear();
 
-    // TODO: Add your rendering code here.
+    // Start the Dear ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
 
+    // Render FPS window
+    ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+
+    static bool show_demo_window = true;
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
+
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+    // Update and Render additional Platform Windows
+    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
 
     Present();
 }
@@ -302,6 +328,31 @@ void Game::CreateResources()
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
     // TODO: Initialize windows-size dependent objects here.
+}
+
+void Game::InitialiseImGui(HWND hwnd)
+{
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    io = &ImGui::GetIO(); (void)io;
+    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
+    ImGui::StyleColorsDark();
+
+    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
+    ImGuiStyle& style = ImGui::GetStyle();
+    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+        style.WindowRounding = 0.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplDX11_Init(m_d3dDevice.Get(), m_d3dContext.Get());
 }
 
 void Game::OnDeviceLost()

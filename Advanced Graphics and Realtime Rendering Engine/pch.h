@@ -35,10 +35,12 @@
 
 #include <d3d11_1.h>
 #include <dxgi1_2.h>
+#include <d3dcompiler.h>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 #include <DDSTextureLoader.h>
 
+#include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -48,6 +50,10 @@
 #include <stdexcept>
 
 #include "SimpleMath.h"
+
+#include "External/imgui/imgui.h"
+#include "External/imgui/imgui_impl_win32.h"
+#include "External/imgui/imgui_impl_dx11.h"
 
 namespace DX
 {

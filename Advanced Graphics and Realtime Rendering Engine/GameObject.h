@@ -1,5 +1,6 @@
 #pragma once
 #include "Structures.h"
+#include "Shader.h"
 
 class GameObject {
 public:
@@ -7,10 +8,12 @@ public:
 	~GameObject();
 
 	HRESULT InitMesh(ID3D11Device* device, ID3D11DeviceContext* context);
-	HRESULT InitShader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
+	void InitShader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
 
 	void Update(float t, ID3D11DeviceContext* context);
 	void Render(ID3D11DeviceContext* context);
+
+	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
 
 private:
 	DirectX::XMFLOAT3 m_position;
@@ -24,5 +27,5 @@ private:
 	
 	MaterialPropertiesConstantBuffer m_material;
 
-	//std::shared_ptr<Shader> m_shader;
+	std::shared_ptr<Shader> m_shader;
 };

@@ -44,6 +44,7 @@ private:
 
     void CreateDevice();
     void CreateResources();
+    void InitialiseImGui(HWND hwnd);
 
     void OnDeviceLost();
 
@@ -62,4 +63,10 @@ private:
 
     // Rendering loop timer.
     DX::StepTimer                                   m_timer;
+
+    // ImGui
+    ImGuiIO* io;
+
+    // Scene
+    std::shared_ptr<GameObject> go;
 };
