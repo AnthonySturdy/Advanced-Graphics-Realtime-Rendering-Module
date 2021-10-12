@@ -1,7 +1,3 @@
-//
-// Game.cpp
-//
-
 #include "pch.h"
 #include "Game.h"
 
@@ -13,8 +9,8 @@ using Microsoft::WRL::ComPtr;
 
 Game::Game() noexcept :
     m_window(nullptr),
-    m_outputWidth(800),
-    m_outputHeight(600),
+    m_outputWidth(1280),
+    m_outputHeight(720),
     m_featureLevel(D3D_FEATURE_LEVEL_9_1)
 {
 }
@@ -30,12 +26,8 @@ void Game::Initialize(HWND window, int width, int height)
 
     CreateResources();
 
-    // TODO: Change the timer settings if you want something other than the default variable timestep mode.
-    // e.g. for 60 FPS fixed timestep update logic, call:
-    /*
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
-    */
 }
 
 // Executes the basic game loop.
@@ -70,6 +62,7 @@ void Game::Render()
     Clear();
 
     // TODO: Add your rendering code here.
+
 
     Present();
 }
@@ -144,8 +137,8 @@ void Game::OnWindowSizeChanged(int width, int height)
 void Game::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = 1280;
+    height = 720;
 }
 
 // These are the resources that depend on the device.

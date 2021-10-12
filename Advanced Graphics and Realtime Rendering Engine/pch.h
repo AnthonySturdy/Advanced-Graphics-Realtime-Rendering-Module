@@ -37,6 +37,7 @@
 #include <dxgi1_2.h>
 #include <DirectXMath.h>
 #include <DirectXColors.h>
+#include <DDSTextureLoader.h>
 
 #include <algorithm>
 #include <cmath>
