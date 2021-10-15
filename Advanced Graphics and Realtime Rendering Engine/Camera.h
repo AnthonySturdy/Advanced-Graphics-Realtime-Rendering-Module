@@ -1,7 +1,7 @@
 #pragma once
 class Camera {
 public:
-	enum CAMERA_TYPE {
+	enum class CAMERA_TYPE {
 		ORTHOGRAPHIC = 0,
 		PERSPECTIVE
 	};
@@ -17,11 +17,6 @@ private:
 	float m_NearPlane;
 	float m_FarPlane;
 	DirectX::XMFLOAT3 m_BackgroundColour;
-
-	DirectX::XMMATRIX m_ViewMatrix;
-	bool m_DirtyViewMatrix;
-	DirectX::XMMATRIX m_ProjectionMatrix;
-	bool m_DirtyProjectionMatrix;
 
 public:
 	Camera(DirectX::XMFLOAT4 position, DirectX::XMFLOAT4 lookAt, DirectX::XMFLOAT4 up, CAMERA_TYPE cameraType, float aspectRatio, float fov, float nearPlane, float farPlane);

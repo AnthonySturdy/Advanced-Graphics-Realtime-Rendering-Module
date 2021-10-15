@@ -30,27 +30,12 @@ void Game::Initialise(HWND window, int width, int height)
 
     CreateConstantBuffers();
 
+    CreateCameras(width, height);
+    
+    CreateGameObjects();
+
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
-
-    // Create camera
-    m_camera = std::make_shared<Camera>(XMFLOAT4(-10.0f, 10.0f, -10.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
-                                        Camera::CAMERA_TYPE::PERSPECTIVE,
-                                        width / (float)height,
-                                        DirectX::XM_PIDIV2,
-                                        0.01f, 100.0f);
-
-    // Create and initialise GameObject
-    m_gameObject = std::make_shared<GameObject>();
-    m_gameObject->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
-    D3D11_INPUT_ELEMENT_DESC layout[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-    UINT numElements = ARRAYSIZE(layout);
-    m_gameObject->InitShader(m_d3dDevice.Get(), L"shader.fx", L"shader.fx", layout, numElements);
 }
 
 // Executes the basic game loop.
@@ -126,7 +111,13 @@ void Game::Render()
     ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 
+    //ImGui::SetNextWindowSize(ImVec2(375, 250));
+    ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
+
     m_camera->RenderGUIControls();
+    m_gameObject->RenderGUIControls();
+
+    ImGui::End();
 
     static bool show_demo_window = false;
     if (show_demo_window)
@@ -156,7 +147,7 @@ void Game::SetupLightsForRender() {
     light.LinearAttenuation = 1;
     light.QuadraticAttenuation = 1;
 
-    XMFLOAT4 LightPosition(0.0f, 0, -5.0f, 1.0f);
+    XMFLOAT4 LightPosition(0.0f, 5.0f, -10.0f, 1.0f);
     light.Position = LightPosition;
     XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = XMVector3Normalize(LightDirection);
@@ -172,7 +163,8 @@ void Game::SetupLightsForRender() {
 void Game::Clear()
 {
     // Clear the views.
-    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), Colors::CornflowerBlue);
+    XMFLOAT3 clearColour = m_camera->GetBackgroundColour();
+    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), &clearColour.x);
     m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
@@ -449,6 +441,29 @@ void Game::CreateConstantBuffers() {
     hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_lightConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
+}
+
+void Game::CreateCameras(int width, int height) {
+    // Create camera
+    m_camera = std::make_shared<Camera>(XMFLOAT4(-4.0f, 4.0f, -4.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+                                        Camera::CAMERA_TYPE::PERSPECTIVE,
+                                        width / (float)height,
+                                        DirectX::XM_PIDIV2,
+                                        0.01f, 100.0f);
+}
+
+void Game::CreateGameObjects() {
+    // Create and initialise GameObject
+    m_gameObject = std::make_shared<GameObject>();
+    m_gameObject->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    UINT numElements = ARRAYSIZE(layout);
+    m_gameObject->InitShader(m_d3dDevice.Get(), L"shader.fx", L"shader.fx", layout, numElements);
 }
 
 void Game::OnDeviceLost()

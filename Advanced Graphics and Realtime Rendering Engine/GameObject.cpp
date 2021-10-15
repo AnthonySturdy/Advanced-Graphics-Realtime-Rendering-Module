@@ -5,7 +5,7 @@ using namespace DirectX;
 
 #define NUM_VERTICES 36
 
-GameObject::GameObject() : m_position(XMFLOAT3()), m_world(XMFLOAT4X4()) {
+GameObject::GameObject() : m_position(XMFLOAT3()), m_rotation(XMFLOAT3()), m_scale(XMFLOAT3(1, 1, 1)), m_world(XMFLOAT4X4()) {
 	// Initialise world matrix
 	XMStoreFloat4x4(&m_world, XMMatrixIdentity());
 }
@@ -143,11 +143,11 @@ void GameObject::Update(float t, ID3D11DeviceContext* context) {
 	static float cummulativeTime = 0;
 	cummulativeTime += t;
 
-	// Cube:  Rotate around origin
-	XMMATRIX mSpin = XMMatrixRotationY(cummulativeTime / 10.0f);
-
-	XMMATRIX mTranslate = XMMatrixTranslation(m_position.x, m_position.y, m_position.z);
-	XMMATRIX world = mSpin * mTranslate;
+	XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
+	XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
+	XMMATRIX translation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
+	
+	XMMATRIX world = scale * rotation * translation;
 	XMStoreFloat4x4(&m_world, world);
 
 	context->UpdateSubresource(m_materialConstantBuffer.Get(), 0, nullptr, &m_material, 0, 0);
@@ -158,4 +158,12 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 	context->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
 	
 	context->DrawIndexed(NUM_VERTICES, 0, 0);
+}
+
+void GameObject::RenderGUIControls() {
+	if (ImGui::CollapsingHeader("GameObject Controls")) {
+		ImGui::DragFloat3("Position", &m_position.x, 0.01f);
+		ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
+		ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
+	}
 }

@@ -13,6 +13,8 @@ public:
 	void Update(float t, ID3D11DeviceContext* context);
 	void Render(ID3D11DeviceContext* context);
 
+	void RenderGUIControls();
+
 	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
 	std::shared_ptr<Shader> GetShader() { return m_shader; }
@@ -21,6 +23,8 @@ public:
 
 private:
 	DirectX::XMFLOAT3 m_position;
+	DirectX::XMFLOAT3 m_rotation;
+	DirectX::XMFLOAT3 m_scale;
 	DirectX::XMFLOAT4X4 m_world;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;

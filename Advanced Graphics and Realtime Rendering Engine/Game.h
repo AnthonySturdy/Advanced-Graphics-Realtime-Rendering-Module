@@ -51,6 +51,8 @@ private:
     void CreateResources();
     void InitialiseImGui(HWND hwnd);
     void CreateConstantBuffers();
+    void CreateCameras(int width, int height);
+    void CreateGameObjects();
 
     void OnDeviceLost();
 
