@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results version="2">
+    <cppcheck version="2.6"/>
+    <errors>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &amp;#039;_Material::Padding&amp;#039; is not initialized in the constructor." verbose="Member variable &amp;#039;_Material::Padding&amp;#039; is not initialized in the constructor." cwe="398" file0="Game.cpp">
+            <location file="Structures.h" line="18"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &amp;#039;Light::Padding&amp;#039; is not initialized in the constructor." verbose="Member variable &amp;#039;Light::Padding&amp;#039; is not initialized in the constructor." cwe="398" file0="Game.cpp">
+            <location file="Structures.h" line="56"/>
+        </error>
+        <error id="uninitMemberVar" severity="warning" msg="Member variable &amp;#039;Game::m_ioImGui&amp;#039; is not initialized in the constructor." verbose="Member variable &amp;#039;Game::m_ioImGui&amp;#039; is not initialized in the constructor." cwe="398" file0="Game.cpp">
+            <location file="Game.cpp" line="10"/>
+        </error>
+        <error id="constStatement" severity="warning" msg="Unused variable value &amp;#039;elapsedTime&amp;#039;" verbose="Unused variable value &amp;#039;elapsedTime&amp;#039;" cwe="398" file0="Game.cpp">
+            <location file="Game.cpp" line="60"/>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &amp;#039;hr&amp;#039; is reassigned a value before the old one has been used." verbose="Variable &amp;#039;hr&amp;#039; is reassigned a value before the old one has been used." cwe="563" file0="GameObject.cpp">
+            <location file="GameObject.cpp" line="131" info="hr is overwritten"/>
+            <location file="GameObject.cpp" line="119" info="hr is assigned"/>
+        </error>
+        <error id="variableScope" severity="style" msg="The scope of the variable &amp;#039;s_fullscreen&amp;#039; can be reduced." verbose="The scope of the variable &amp;#039;s_fullscreen&amp;#039; can be reduced. Warning: Be careful when fixing this message, especially when there are inner loops. Here is an example where cppcheck will write that the scope for &amp;#039;i&amp;#039; can be reduced:&#10;void f(int x)&#10;{&#10;    int i = 0;&#10;    if (x) {&#10;        // it&amp;#039;s safe to move &amp;#039;int i = 0;&amp;#039; here&#10;        for (int n = 0; n &amp;lt; 10; ++n) {&#10;            // it is possible but not safe to move &amp;#039;int i = 0;&amp;#039; here&#10;            do_something(&amp;amp;i);&#10;        }&#10;    }&#10;}&#10;When you see this message it is always safe to reduce the variable scope 1 level." cwe="398" file0="Main.cpp">
+            <location file="Main.cpp" line="130"/>
+        </error>
+        <error id="unusedVariable" severity="style" msg="Unused variable: ps" verbose="Unused variable: ps" cwe="563" file0="Shader.cpp">
+            <location file="Shader.cpp" line="28"/>
+        </error>
+    </errors>
+</results>
