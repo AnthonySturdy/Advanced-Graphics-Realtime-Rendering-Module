@@ -56,8 +56,6 @@ void Game::Update(DX::StepTimer const& timer)
 
     // TODO: Add your game logic here.
     m_gameObject->Update(elapsedTime, m_d3dContext.Get());
-
-    elapsedTime;
 }
 
 // Draws the scene.

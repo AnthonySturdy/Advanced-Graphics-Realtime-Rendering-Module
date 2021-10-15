@@ -21,7 +21,9 @@ struct _Material {
 		, Diffuse(1.0f, 1.0f, 1.0f, 1.0f)
 		, Specular(1.0f, 1.0f, 1.0f, 1.0f)
 		, SpecularPower(128.0f)
-		, UseTexture(false) {
+		, UseTexture(false)
+		, Padding{0.0f, 0.0f}
+	{
 	}
 
 	DirectX::XMFLOAT4   Emissive;
@@ -62,7 +64,9 @@ struct Light {
 		, LinearAttenuation(0.0f)
 		, QuadraticAttenuation(0.0f)
 		, LightType(DirectionalLight)
-		, Enabled(0) {
+		, Enabled(0)
+		, Padding{0, 0}
+	{
 	}
 
 	DirectX::XMFLOAT4    Position;

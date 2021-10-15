@@ -73,7 +73,7 @@ private:
     DX::StepTimer                                   m_timer;
 
     // ImGui
-    ImGuiIO* m_ioImGui;
+    ImGuiIO* m_ioImGui = nullptr;
 
     // Scene
     std::shared_ptr<Camera> m_camera;

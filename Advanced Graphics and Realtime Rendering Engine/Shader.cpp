@@ -25,7 +25,6 @@ Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR*
         return;
     }
 
-    ID3D11PixelShader* ps;
     if (FAILED(device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &m_PixelShader))) {
         vsBlob->Release();
         psBlob->Release();

@@ -117,6 +117,8 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 	hr = device->CreateSamplerState(&sampDesc, m_samplerLinear.GetAddressOf());
+	if (FAILED(hr))
+		return hr;
 
 	m_material.Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	m_material.Material.Specular = XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f);
