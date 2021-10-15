@@ -1,7 +1,10 @@
 #pragma once
 
 #include "StepTimer.h"
+#include "Structures.h"
+
 #include "GameObject.h"
+#include "Camera.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -19,7 +22,7 @@ public:
     Game& operator= (Game const&) = delete;
 
     // Initialization and management
-    void Initialize(HWND window, int width, int height);
+    void Initialise(HWND window, int width, int height);
 
     // Basic game loop
     void Tick();
@@ -39,12 +42,15 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
+    void SetupLightsForRender();
+
     void Clear();
     void Present();
 
     void CreateDevice();
     void CreateResources();
     void InitialiseImGui(HWND hwnd);
+    void CreateConstantBuffers();
 
     void OnDeviceLost();
 
@@ -65,8 +71,11 @@ private:
     DX::StepTimer                                   m_timer;
 
     // ImGui
-    ImGuiIO* io;
+    ImGuiIO* m_ioImGui;
 
     // Scene
-    std::shared_ptr<GameObject> go;
+    std::shared_ptr<Camera> m_camera;
+    std::shared_ptr<GameObject> m_gameObject;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
 };

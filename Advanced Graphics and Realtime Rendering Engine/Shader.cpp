@@ -44,11 +44,7 @@ Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR*
     psBlob->Release();
 }
 
-Shader::~Shader() {
-    if (m_VertexShader) m_VertexShader->Release();
-    if (m_PixelShader) m_PixelShader->Release();
-    if (m_VertexLayout) m_VertexLayout->Release();
-}
+Shader::~Shader() { }
 
 HRESULT Shader::CompileShaderFromFile(const WCHAR* fileName, LPCSTR entryPoint, LPCSTR shaderModel, ID3DBlob** blobOut) {
     HRESULT hr = S_OK;

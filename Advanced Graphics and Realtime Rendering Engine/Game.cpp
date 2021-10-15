@@ -16,7 +16,7 @@ Game::Game() noexcept :
 }
 
 // Initialize the Direct3D resources required to run.
-void Game::Initialize(HWND window, int width, int height)
+void Game::Initialise(HWND window, int width, int height)
 {
     m_window = window;
     m_outputWidth = std::max(width, 1);
@@ -28,10 +28,29 @@ void Game::Initialize(HWND window, int width, int height)
 
     InitialiseImGui(window);
 
+    CreateConstantBuffers();
+
     m_timer.SetFixedTimeStep(true);
     m_timer.SetTargetElapsedSeconds(1.0 / 60);
 
-    go = std::make_shared<GameObject>();
+    // Create camera
+    m_camera = std::make_shared<Camera>(XMFLOAT4(-10.0f, 10.0f, -10.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+                                        Camera::CAMERA_TYPE::PERSPECTIVE,
+                                        width / (float)height,
+                                        DirectX::XM_PIDIV2,
+                                        0.01f, 100.0f);
+
+    // Create and initialise GameObject
+    m_gameObject = std::make_shared<GameObject>();
+    m_gameObject->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
+    D3D11_INPUT_ELEMENT_DESC layout[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+    UINT numElements = ARRAYSIZE(layout);
+    m_gameObject->InitShader(m_d3dDevice.Get(), L"shader.fx", L"shader.fx", layout, numElements);
 }
 
 // Executes the basic game loop.
@@ -51,6 +70,8 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
+    m_gameObject->Update(elapsedTime, m_d3dContext.Get());
+
     elapsedTime;
 }
 
@@ -70,12 +91,44 @@ void Game::Render()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
+    // get the game object world transform
+    XMMATRIX mGO = XMLoadFloat4x4(m_gameObject->GetTransform());
+
+    // Get the game object's shader
+    Shader* shader = m_gameObject->GetShader().get();
+
+    // Set active vertex layout
+    m_d3dContext->IASetInputLayout(shader->GetVertexLayout().Get());
+
+    // store this and the view / projection in a constant buffer for the vertex shader to use
+    ConstantBuffer cb1;
+    cb1.mWorld = XMMatrixTranspose(mGO);
+    cb1.mView = XMMatrixTranspose(m_camera->CalculateViewMatrix());
+    cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
+    cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
+    m_d3dContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
+
+    SetupLightsForRender();
+
+    // Render the cube
+    m_d3dContext->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
+    m_d3dContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+
+    m_d3dContext->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0);
+    m_d3dContext->PSSetConstantBuffers(2, 1, m_lightConstantBuffer.GetAddressOf());
+    ID3D11Buffer* materialCB = m_gameObject->GetMaterialConstantBuffer();
+    m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
+
+    m_gameObject->Render(m_d3dContext.Get());
+
     // Render FPS window
     ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 
-    static bool show_demo_window = true;
+    m_camera->RenderGUIControls();
+
+    static bool show_demo_window = false;
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
 
@@ -84,13 +137,35 @@ void Game::Render()
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
     // Update and Render additional Platform Windows
-    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    if (m_ioImGui->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         ImGui::UpdatePlatformWindows();
         ImGui::RenderPlatformWindowsDefault();
     }
 
     Present();
+}
+
+void Game::SetupLightsForRender() {
+    Light light;
+    light.Enabled = static_cast<int>(true);
+    light.LightType = PointLight;
+    light.Color = XMFLOAT4(Colors::White);
+    light.SpotAngle = XMConvertToRadians(45.0f);
+    light.ConstantAttenuation = 1.0f;
+    light.LinearAttenuation = 1;
+    light.QuadraticAttenuation = 1;
+
+    XMFLOAT4 LightPosition(0.0f, 0, -5.0f, 1.0f);
+    light.Position = LightPosition;
+    XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
+    LightDirection = XMVector3Normalize(LightDirection);
+    XMStoreFloat4(&light.Direction, LightDirection);
+
+    LightPropertiesConstantBuffer lightProperties;
+    lightProperties.EyePosition = LightPosition;
+    lightProperties.Lights[0] = light;
+    m_d3dContext->UpdateSubresource(m_lightConstantBuffer.Get(), 0, nullptr, &lightProperties, 0, 0);
 }
 
 // Helper method to clear the back buffers.
@@ -335,16 +410,16 @@ void Game::InitialiseImGui(HWND hwnd)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    io = &ImGui::GetIO(); (void)io;
-    io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-    io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-    io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    m_ioImGui = &ImGui::GetIO(); (void)m_ioImGui;
+    m_ioImGui->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+    m_ioImGui->ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+    m_ioImGui->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
     ImGui::StyleColorsDark();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
-    if (io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    if (m_ioImGui->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
@@ -353,6 +428,27 @@ void Game::InitialiseImGui(HWND hwnd)
     // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(m_d3dDevice.Get(), m_d3dContext.Get());
+}
+
+void Game::CreateConstantBuffers() {
+    // Create the constant buffer
+    D3D11_BUFFER_DESC bd = {};
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    HRESULT hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_constantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return;
+
+    // Create the light constant buffer
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(LightPropertiesConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_lightConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return;
 }
 
 void Game::OnDeviceLost()

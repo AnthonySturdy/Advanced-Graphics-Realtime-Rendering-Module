@@ -63,7 +63,7 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	// Set vertex buffer
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
-	context->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
+	context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
 
 	// Create index buffer
 	WORD indices[] =
@@ -116,7 +116,7 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = device->CreateSamplerState(&sampDesc, &m_samplerLinear);
+	hr = device->CreateSamplerState(&sampDesc, m_samplerLinear.GetAddressOf());
 
 	m_material.Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	m_material.Material.Specular = XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f);
@@ -154,8 +154,8 @@ void GameObject::Update(float t, ID3D11DeviceContext* context) {
 }
 
 void GameObject::Render(ID3D11DeviceContext* context) {
-	context->PSSetShaderResources(0, 1, &m_textureResourceView);
-	context->PSSetSamplers(0, 1, &m_samplerLinear);
+	context->PSSetShaderResources(0, 1, m_textureResourceView.GetAddressOf());
+	context->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
 	
 	context->DrawIndexed(NUM_VERTICES, 0, 0);
 }

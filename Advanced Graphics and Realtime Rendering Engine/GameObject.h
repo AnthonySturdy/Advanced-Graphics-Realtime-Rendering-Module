@@ -13,6 +13,10 @@ public:
 	void Update(float t, ID3D11DeviceContext* context);
 	void Render(ID3D11DeviceContext* context);
 
+	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
+	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
+	std::shared_ptr<Shader> GetShader() { return m_shader; }
+
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
 
 private:
