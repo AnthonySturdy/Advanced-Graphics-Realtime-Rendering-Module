@@ -106,20 +106,14 @@ void Game::Render()
 
     // Render FPS window
     ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 
     //ImGui::SetNextWindowSize(ImVec2(375, 250));
     ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
-
-    m_camera->RenderGUIControls();
-    m_gameObject->RenderGUIControls();
-
+        m_camera->RenderGUIControls();
+        m_gameObject->RenderGUIControls();
     ImGui::End();
-
-    static bool show_demo_window = false;
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
 
     // Render ImGui
     ImGui::Render();
@@ -461,7 +455,7 @@ void Game::CreateGameObjects() {
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
     UINT numElements = ARRAYSIZE(layout);
-    m_gameObject->InitShader(m_d3dDevice.Get(), L"shader.fx", L"shader.fx", layout, numElements);
+    m_gameObject->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
 }
 
 void Game::OnDeviceLost()

@@ -5,14 +5,19 @@
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompileFromFile() below.
 #endif
 
-Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements) {
+Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, const WCHAR* pixelShaderPathWithoutExt, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements) {
     // Compile and create Vertex shader
     ID3DBlob* vsBlob = nullptr;
-    if (FAILED(CompileShaderFromFile(vertexShaderPath, "VS", "vs_4_0", &vsBlob))) {
-        MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
-        return;
+    std::wstring vertShaderCso(vertexShaderPathWithoutExt); vertShaderCso += L".cso";
+    if (FAILED(D3DReadFileToBlob(vertShaderCso.c_str(), &vsBlob))) {        // Attempt to load pre-compiled vertex shader
+        // Attempt to compile at runtime if precompiled shader fails
+        std::wstring vertShaderHlsl(vertexShaderPathWithoutExt); vertShaderHlsl += L".hlsl";
+        if (FAILED(CompileShaderFromFile(vertShaderHlsl.c_str(), "VS", "vs_4_0", &vsBlob))) {
+            MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
+            return;
+        }
     }
-
+    
     if (FAILED(device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &m_VertexShader))) {
         vsBlob->Release();
         return;
@@ -20,9 +25,14 @@ Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR*
 
     // Compile and create Pixel shader
     ID3DBlob* psBlob = nullptr;
-    if (FAILED(CompileShaderFromFile(pixelShaderPath, "PS", "ps_4_0", &psBlob))) {
-        MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
-        return;
+    std::wstring pixelShaderCso(pixelShaderPathWithoutExt); pixelShaderCso += L".cso";
+    if (FAILED(D3DReadFileToBlob(pixelShaderCso.c_str(), &psBlob))) {        // Attempt to load pre-compiled pixel shader
+        // Attempt to compile at runtime if precompiled shader fails
+        std::wstring pixelShaderHlsl(pixelShaderPathWithoutExt); pixelShaderHlsl += L".hlsl";
+        if (FAILED(CompileShaderFromFile(pixelShaderHlsl.c_str(), "PS", "ps_4_0", &psBlob))) {
+            MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
+            return;
+        }
     }
 
     if (FAILED(device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &m_PixelShader))) {

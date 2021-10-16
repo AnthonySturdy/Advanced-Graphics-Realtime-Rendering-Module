@@ -1,8 +1,9 @@
 #pragma once
+#include <fstream>
 
 class Shader {
 public:
-	Shader(ID3D11Device* device, const WCHAR* vertexShaderPath, const WCHAR* pixelShaderPath, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
+	Shader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, const WCHAR* pixelShaderPathWithoutExt, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
 	~Shader();
 
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> GetVertexShader() { return m_VertexShader; }

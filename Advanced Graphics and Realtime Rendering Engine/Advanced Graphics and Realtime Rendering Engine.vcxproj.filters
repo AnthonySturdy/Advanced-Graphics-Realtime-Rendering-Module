@@ -14,6 +14,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{d5e0f117-89d5-429e-86a8-c6dd00c0af06}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Compiled">
+      <UniqueIdentifier>{38fa04d1-d908-4f12-bbcf-4869c557791e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -91,8 +94,19 @@
     </Manifest>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shader.fx">
+    <FxCompile Include="PixelShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="PixelShader.cso">
+      <Filter>Shaders\Compiled</Filter>
+    </None>
+    <None Include="VertexShader.cso">
+      <Filter>Shaders\Compiled</Filter>
+    </None>
   </ItemGroup>
 </Project>
