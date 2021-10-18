@@ -26,8 +26,7 @@ PS_INPUT VS(VS_INPUT input) {
     output.Pos = mul(output.Pos, Projection);
 
     // multiply the normal by the world transform (to go from model space to world space)
-    output.Norm = mul(float4(input.Norm, 1), World).xyz;
-
+    output.Norm = mul(float4(input.Norm, 0), World).xyz;
     output.Tex = input.Tex;
 
     return output;

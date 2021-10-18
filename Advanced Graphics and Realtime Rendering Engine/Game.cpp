@@ -136,10 +136,10 @@ void Game::SetupLightsForRender() {
     light.Color = XMFLOAT4(Colors::White);
     light.SpotAngle = XMConvertToRadians(45.0f);
     light.ConstantAttenuation = 1.0f;
-    light.LinearAttenuation = 1;
-    light.QuadraticAttenuation = 1;
+    light.LinearAttenuation = .1f;
+    light.QuadraticAttenuation = 0.01f;
 
-    XMFLOAT4 LightPosition(0.0f, 5.0f, -10.0f, 1.0f);
+    XMFLOAT4 LightPosition(0.0f, 0.0f, -5.0f, 1.0f);
     light.Position = LightPosition;
     XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = XMVector3Normalize(LightDirection);
@@ -212,6 +212,9 @@ void Game::OnWindowSizeChanged(int width, int height)
 {
     m_outputWidth = std::max(width, 1);
     m_outputHeight = std::max(height, 1);
+
+    if (m_camera) 
+        m_camera->SetAspectRatio(width / (float)height);
 
     CreateResources();
 

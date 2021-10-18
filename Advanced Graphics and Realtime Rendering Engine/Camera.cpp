@@ -35,6 +35,10 @@ void Camera::SetBackgroundColour(DirectX::XMFLOAT3 val) {
 	m_BackgroundColour = val;
 }
 
+void Camera::SetAspectRatio(float val) {
+	m_AspectRatio = val;
+}
+
 void Camera::RenderGUIControls() {
 	if (ImGui::CollapsingHeader("Active Camera Controls")) {
 		ImGui::DragFloat3("Position", &m_Position.x, 0.015f);

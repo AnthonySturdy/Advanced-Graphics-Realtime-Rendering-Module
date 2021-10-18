@@ -114,7 +114,7 @@ LightingResult DoPointLight(Light light, float3 vertexToEye, float4 vertexPos, f
 	vertexToLight = vertexToLight / distance;
 
 	float attenuation = DoAttenuation(light, distance);
-	attenuation = 1;
+	//attenuation = 1;
 
 
 	result.Diffuse = DoDiffuse(light, vertexToLight, N) * attenuation;

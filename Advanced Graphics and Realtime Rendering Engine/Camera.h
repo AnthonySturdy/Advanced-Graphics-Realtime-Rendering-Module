@@ -40,6 +40,7 @@ public:
 	void SetNearPlane(float val);
 	void SetFarPlane(float val);
 	void SetBackgroundColour(DirectX::XMFLOAT3 val);
+	void SetAspectRatio(float val);
 
 	void RenderGUIControls();
 };
