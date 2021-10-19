@@ -61,21 +61,14 @@ cbuffer LightProperties : register(b2) {
 };
 
 //--------------------------------------------------------------------------------------
-struct VS_INPUT {
-	float4 Pos : POSITION;
-	float3 Norm : NORMAL;
-	float2 Tex : TEXCOORD0;
-    float3 Tan : TANGENT;
-    float3 Binorm : BINORMAL;
-};
-
 struct PS_INPUT {
 	float4 Pos : SV_POSITION;
 	float4 worldPos : POSITION;
 	float3 Norm : NORMAL;
 	float2 Tex : TEXCOORD0;
+    float3 Tan : TANGENT;
+    float3 Binorm : BINORMAL;
 };
-
 
 float4 DoDiffuse(Light light, float3 L, float3 N) {
 	float NdotL = max(0, dot(N, L));
@@ -117,8 +110,6 @@ LightingResult DoPointLight(Light light, float3 vertexToEye, float4 vertexPos, f
 	vertexToLight = vertexToLight / distance;
 
 	float attenuation = DoAttenuation(light, distance);
-	//attenuation = 1;
-
 
 	result.Diffuse = DoDiffuse(light, vertexToLight, N) * attenuation;
 	result.Specular = DoSpecular(light, vertexToEye, LightDirectionToVertex, N) * attenuation;
@@ -156,7 +147,12 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 
 float4 PS(PS_INPUT IN) : SV_TARGET
 {
-	LightingResult lit = ComputeLighting(IN.worldPos, normalize(IN.Norm));
+    float4 bumpMap = txNormal.Sample(samLinear, IN.Tex);
+    bumpMap = (bumpMap * 2.0f) - 1.0f;
+    float3 bumpNormal = (bumpMap.x * IN.Tan) + (bumpMap.y * IN.Binorm) + (bumpMap.z * IN.Norm);
+    bumpNormal = normalize(bumpNormal);
+	
+    LightingResult lit = ComputeLighting(IN.worldPos, normalize(bumpNormal));
 
 	float4 texColor = { 1, 1, 1, 1 };
 

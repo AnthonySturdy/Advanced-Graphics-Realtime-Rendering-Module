@@ -69,6 +69,8 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 		22,20,21,
 		23,20,22
 	};
+
+	PopulateBinormalTangent(vertices, indices);
 	
 	// Create vertex buffer
 	D3D11_BUFFER_DESC bd = {};
@@ -184,18 +186,18 @@ void GameObject::PopulateBinormalTangent(std::vector<SimpleVertex>& vertices, st
 		const int baseIndex = i * 3;
 
 		XMFLOAT3 normal, tangent, binormal;
-		CalculateTangentBinormal2(vertices[baseIndex + 0], 
-									vertices[baseIndex + 1], 
-									vertices[baseIndex + 2], 
+		CalculateTangentBinormal2(vertices[indices[baseIndex + 0]], 
+									vertices[indices[baseIndex + 1]], 
+									vertices[indices[baseIndex + 2]], 
 									normal, tangent, binormal);
 
-		vertices[baseIndex + 0].Tangent = tangent;
-		vertices[baseIndex + 1].Tangent = tangent;
-		vertices[baseIndex + 2].Tangent = tangent;
+		vertices[indices[baseIndex + 0]].Tangent = tangent;
+		vertices[indices[baseIndex + 1]].Tangent = tangent;
+		vertices[indices[baseIndex + 2]].Tangent = tangent;
 
-		vertices[baseIndex + 0].BiTangent = binormal;
-		vertices[baseIndex + 1].BiTangent = binormal;
-		vertices[baseIndex + 2].BiTangent = binormal;
+		vertices[indices[baseIndex + 0]].BiTangent = binormal;
+		vertices[indices[baseIndex + 1]].BiTangent = binormal;
+		vertices[indices[baseIndex + 2]].BiTangent = binormal;
 	}
 }
 

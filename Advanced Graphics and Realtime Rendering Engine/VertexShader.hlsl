@@ -18,6 +18,8 @@ struct PS_INPUT {
     float4 worldPos : POSITION;
     float3 Norm : NORMAL;
     float2 Tex : TEXCOORD0;
+    float3 Tan : TANGENT;
+    float3 Binorm : BINORMAL;
 };
 
 PS_INPUT VS(VS_INPUT input) {
@@ -26,10 +28,17 @@ PS_INPUT VS(VS_INPUT input) {
     output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
-
-    // multiply the normal by the world transform (to go from model space to world space)
-    output.Norm = mul(float4(input.Norm, 0), World).xyz;
+    
     output.Tex = input.Tex;
+    
+    output.Norm = mul(float4(input.Norm, 0), World).xyz;
+    output.Norm = normalize(output.Norm);
+    
+    output.Tan = mul(input.Tan, (float3x3)World);
+    output.Tan = normalize(output.Tan);
+    
+    output.Binorm = mul(input.Binorm, (float3x3)World);
+    output.Binorm = normalize(output.Binorm);
 
     return output;
 }
