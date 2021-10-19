@@ -6,6 +6,7 @@ cbuffer ConstantBuffer : register(b0) {
 }
 
 Texture2D txDiffuse : register(t0);
+Texture2D txNormal : register(t1);
 SamplerState samLinear : register(s0);
 
 #define MAX_LIGHTS 1
@@ -64,6 +65,8 @@ struct VS_INPUT {
 	float4 Pos : POSITION;
 	float3 Norm : NORMAL;
 	float2 Tex : TEXCOORD0;
+    float3 Tan : TANGENT;
+    float3 Binorm : BINORMAL;
 };
 
 struct PS_INPUT {
