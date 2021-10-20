@@ -24,7 +24,8 @@ struct _Material {
 		, Specular(1.0f, 1.0f, 1.0f, 1.0f)
 		, SpecularPower(128.0f)
 		, UseTexture(false)
-		, Padding{0.0f, 0.0f}
+		, UseNormal(false)
+		, Padding(0.0f)
 	{
 	}
 
@@ -37,10 +38,9 @@ struct _Material {
 	DirectX::XMFLOAT4   Specular;
 	//----------------------------------- (16 byte boundary)
 	float               SpecularPower;
-	// Add some padding complete the 16 byte boundary.
 	int                 UseTexture;
-	// Add some padding to complete the 16 byte boundary.
-	float               Padding[2];
+	int					UseNormal;
+	float               Padding;
 	//----------------------------------- (16 byte boundary)
 }; // Total:                                80 bytes (5 * 16)
 

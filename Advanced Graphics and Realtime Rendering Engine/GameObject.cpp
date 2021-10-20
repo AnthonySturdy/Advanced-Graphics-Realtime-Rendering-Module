@@ -45,6 +45,7 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	m_material.Material.Specular = XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f);
 	m_material.Material.SpecularPower = 32.0f;
 	m_material.Material.UseTexture = true;
+	m_material.Material.UseNormal = true;
 
 	// Create the material constant buffer
 	D3D11_BUFFER_DESC bd = {};
@@ -93,8 +94,17 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 
 void GameObject::RenderGUIControls() {
 	if (ImGui::CollapsingHeader("GameObject Controls")) {
+		ImGui::Text("Transform");
 		ImGui::DragFloat3("Position", &m_position.x, 0.01f);
 		ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
 		ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
+		ImGui::Text("Material");
+		ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
+		ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
+		ImGui::DragFloat3("Diffuse", &m_material.Material.Diffuse.x, 0.001f);
+		ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);
+		ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
+		ImGui::Checkbox("Diffuse Texture", (bool*)&m_material.Material.UseTexture);
+		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
 	}
 }

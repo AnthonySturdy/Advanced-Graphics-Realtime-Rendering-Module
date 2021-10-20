@@ -26,7 +26,8 @@ struct _Material {
 							//----------------------------------- (16 byte boundary)
 	float   SpecularPower;  // 4 bytes
 	bool    UseTexture;     // 4 bytes
-	float2  Padding;        // 8 bytes
+    bool	UseNormal;		// 4 bytes
+	float   Padding;        // 4 bytes
 							//----------------------------------- (16 byte boundary)
 };  // Total:               // 80 bytes ( 5 * 16 )
 
@@ -151,10 +152,12 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 	MARKING SCHEME: Normal Mapping
 	DESCRIPTION: Map sampling, normal value decompression, transformation to tangent space
 	***********************************************/
-    float4 bumpMap = txNormal.Sample(samLinear, IN.Tex);
-    bumpMap = (bumpMap * 2.0f) - 1.0f;
-    float3 bumpNormal = (bumpMap.x * IN.Tan) + (bumpMap.y * IN.Binorm) + (bumpMap.z * IN.Norm);
-    bumpNormal = normalize(bumpNormal);
+    float3 bumpNormal = IN.Norm;	// Will be uneffected if not using normal map
+    if (Material.UseNormal) {
+        float4 bumpMap = txNormal.Sample(samLinear, IN.Tex);
+        bumpMap = (bumpMap * 2.0f) - 1.0f;
+        bumpNormal = normalize((bumpMap.x * IN.Tan) + (bumpMap.y * IN.Binorm) + (bumpMap.z * IN.Norm));
+    }
 	
     LightingResult lit = ComputeLighting(IN.worldPos, normalize(bumpNormal));
 
