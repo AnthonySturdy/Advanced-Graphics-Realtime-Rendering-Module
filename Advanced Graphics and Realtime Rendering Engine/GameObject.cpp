@@ -20,11 +20,11 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// load and setup textures
-	HRESULT hr = CreateDDSTextureFromFile(device, L"Resources\\stone.dds", nullptr, &m_textureResourceView);
+	HRESULT hr = CreateDDSTextureFromFile(device, L"Resources\\PaddedFabric\\paddedfabric-basecolor.dds", nullptr, &m_textureResourceView);
 	if (FAILED(hr))
 		return hr;
 	
-	hr = CreateDDSTextureFromFile(device, L"Resources\\conenormal.dds", nullptr, &m_normalResourceView);
+	hr = CreateDDSTextureFromFile(device, L"Resources\\PaddedFabric\\paddedfabric-normal.dds", nullptr, &m_normalResourceView);
 	if (FAILED(hr))
 		return hr;
 
