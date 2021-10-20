@@ -147,6 +147,10 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 
 float4 PS(PS_INPUT IN) : SV_TARGET
 {
+	/***********************************************
+	MARKING SCHEME: Normal Mapping
+	DESCRIPTION: Map sampling, normal value decompression, transformation to tangent space
+	***********************************************/
     float4 bumpMap = txNormal.Sample(samLinear, IN.Tex);
     bumpMap = (bumpMap * 2.0f) - 1.0f;
     float3 bumpNormal = (bumpMap.x * IN.Tan) + (bumpMap.y * IN.Binorm) + (bumpMap.z * IN.Norm);

@@ -1,6 +1,7 @@
 #pragma once
 #include "Structures.h"
 #include "Shader.h"
+#include "Mesh.h"
 
 #include <vector>
 
@@ -24,16 +25,11 @@ public:
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
 
 private:
-	void PopulateBinormalTangent(std::vector<SimpleVertex>& vertices, std::vector<WORD>& indices);
-	void CalculateTangentBinormal2(SimpleVertex v0, SimpleVertex v1, SimpleVertex v2, DirectX::XMFLOAT3& outNormal, DirectX::XMFLOAT3& outTangent, DirectX::XMFLOAT3& outBinormal);
-
 	DirectX::XMFLOAT3 m_position;
 	DirectX::XMFLOAT3 m_rotation;
 	DirectX::XMFLOAT3 m_scale;
 	DirectX::XMFLOAT4X4 m_world;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureResourceView;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_normalResourceView;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_samplerLinear;
@@ -42,4 +38,5 @@ private:
 	MaterialPropertiesConstantBuffer m_material;
 
 	std::shared_ptr<Shader> m_shader;
+	std::shared_ptr<Mesh> m_mesh;
 };
