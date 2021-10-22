@@ -32,6 +32,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureResourceView;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_normalResourceView;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_parallaxResourceView;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_samplerLinear;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_materialConstantBuffer;
 	

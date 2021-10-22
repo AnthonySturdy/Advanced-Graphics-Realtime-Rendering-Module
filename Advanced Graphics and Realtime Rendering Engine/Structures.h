@@ -25,7 +25,9 @@ struct _Material {
 		, SpecularPower(128.0f)
 		, UseTexture(false)
 		, UseNormal(false)
-		, Padding(0.0f)
+		, UseParallax(false)
+		, ParallaxStrength(0.01f)
+		, Padding{ 0.0f, 0.0f, 0.0f }
 	{
 	}
 
@@ -40,8 +42,10 @@ struct _Material {
 	float               SpecularPower;
 	int                 UseTexture;
 	int					UseNormal;
-	float               Padding;
+	int					UseParallax;
 	//----------------------------------- (16 byte boundary)
+	float				ParallaxStrength;
+	float				Padding[3];
 }; // Total:                                80 bytes (5 * 16)
 
 struct MaterialPropertiesConstantBuffer {

@@ -28,6 +28,10 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	if (FAILED(hr))
 		return hr;
 
+	hr = CreateDDSTextureFromFile(device, L"Resources\\PaddedFabric\\paddedfabric-height.dds", nullptr, &m_parallaxResourceView);
+	if (FAILED(hr))
+		return hr;
+
 	D3D11_SAMPLER_DESC sampDesc;
 	ZeroMemory(&sampDesc, sizeof(sampDesc));
 	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
@@ -42,10 +46,11 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 		return hr;
 
 	m_material.Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	m_material.Material.Specular = XMFLOAT4(1.0f, 0.2f, 0.2f, 1.0f);
+	m_material.Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	m_material.Material.SpecularPower = 32.0f;
 	m_material.Material.UseTexture = true;
 	m_material.Material.UseNormal = true;
+	m_material.Material.UseParallax = true;
 
 	// Create the material constant buffer
 	D3D11_BUFFER_DESC bd = {};
@@ -87,6 +92,7 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 
 	context->PSSetShaderResources(0, 1, m_textureResourceView.GetAddressOf());
 	context->PSSetShaderResources(1, 1, m_normalResourceView.GetAddressOf());
+	context->PSSetShaderResources(2, 1, m_parallaxResourceView.GetAddressOf());
 	context->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
 	
 	context->DrawIndexed(NUM_INDICES, 0, 0);
@@ -106,5 +112,7 @@ void GameObject::RenderGUIControls() {
 		ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
 		ImGui::Checkbox("Diffuse Texture", (bool*)&m_material.Material.UseTexture);
 		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
+		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
+		ImGui::DragFloat("Parallax Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
 	}
 }

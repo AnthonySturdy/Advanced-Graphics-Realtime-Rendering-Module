@@ -7,6 +7,7 @@ cbuffer ConstantBuffer : register(b0) {
 
 Texture2D txDiffuse : register(t0);
 Texture2D txNormal : register(t1);
+Texture2D txParallax : register(t2);
 SamplerState samLinear : register(s0);
 
 #define MAX_LIGHTS 1
@@ -27,9 +28,12 @@ struct _Material {
 	float   SpecularPower;  // 4 bytes
 	bool    UseTexture;     // 4 bytes
     bool	UseNormal;		// 4 bytes
-	float   Padding;        // 4 bytes
+    bool	UseParallax;	// 4 bytes
 							//----------------------------------- (16 byte boundary)
-};  // Total:               // 80 bytes ( 5 * 16 )
+    float ParallaxStrength; // 4 bytes
+    float3	padding;		// 12 bytes
+							//----------------------------------- (16 byte boundary)
+};  // Total:               // 96 bytes ( 6 * 16 )
 
 cbuffer MaterialProperties : register(b1) {
 	_Material Material;
@@ -148,18 +152,34 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 
 float4 PS(PS_INPUT IN) : SV_TARGET
 {
+    float3x3 tbn = float3x3(IN.Tan, IN.Binorm, IN.Norm);
+	
+	/***********************************************
+	MARKING SCHEME: Parallax Mapping
+	DESCRIPTION: View direction in tangent space, used to approximate updated TexCoord for texel height
+	REFERENCE: https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
+	***********************************************/
+    float3 viewDir = normalize(mul(EyePosition.xyz, tbn) - mul(IN.worldPos.xyz, tbn));
+    float2 texCoords = IN.Tex;	// Will be uneffected if not using parallax map
+    if (Material.UseParallax)
+    {
+        float height = txParallax.Sample(samLinear, texCoords).r;
+        float2 p = viewDir.xy / viewDir.z * (height * Material.ParallaxStrength);
+        texCoords -= p;
+    }
+	
 	/***********************************************
 	MARKING SCHEME: Normal Mapping
 	DESCRIPTION: Map sampling, normal value decompression, transformation to tangent space
 	***********************************************/
-    float3 bumpNormal = IN.Norm;	// Will be uneffected if not using normal map
+    float3 bumpNormal = IN.Norm; // Will be uneffected if not using normal map
     if (Material.UseNormal) {
-        float4 bumpMap = txNormal.Sample(samLinear, IN.Tex);
+        float4 bumpMap = txNormal.Sample(samLinear, texCoords);
         bumpMap = (bumpMap * 2.0f) - 1.0f;
-        bumpNormal = normalize((bumpMap.x * IN.Tan) + (bumpMap.y * IN.Binorm) + (bumpMap.z * IN.Norm));
+        bumpNormal = normalize(mul(bumpMap.xyz, tbn));
     }
 	
-    LightingResult lit = ComputeLighting(IN.worldPos, normalize(bumpNormal));
+    LightingResult lit = ComputeLighting(IN.worldPos, bumpNormal);
 
 	float4 texColor = { 1, 1, 1, 1 };
 
@@ -169,7 +189,7 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 	float4 specular = Material.Specular * lit.Specular;
 
 	if (Material.UseTexture) {
-		texColor = txDiffuse.Sample(samLinear, IN.Tex);
+		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
 	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
