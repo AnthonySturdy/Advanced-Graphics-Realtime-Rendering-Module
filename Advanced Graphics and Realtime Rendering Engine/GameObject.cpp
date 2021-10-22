@@ -5,7 +5,7 @@ using namespace DirectX;
 
 #define NUM_INDICES 36
 
-GameObject::GameObject() : m_position(XMFLOAT3()), m_rotation(XMFLOAT3()), m_scale(XMFLOAT3(1, 1, 1)), m_world(XMFLOAT4X4()) {
+GameObject::GameObject() : m_position(XMFLOAT3()), m_rotation(XMFLOAT3()), m_scale(XMFLOAT3(3, 3, 3)), m_world(XMFLOAT4X4()) {
 	// Initialise world matrix
 	XMStoreFloat4x4(&m_world, XMMatrixIdentity());
 }

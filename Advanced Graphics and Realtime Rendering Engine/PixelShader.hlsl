@@ -156,16 +156,50 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 	
 	/***********************************************
 	MARKING SCHEME: Parallax Mapping
-	DESCRIPTION: View direction in tangent space, used to approximate updated TexCoord for texel height
-	REFERENCE: https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
+	DESCRIPTION:	Calculate view direction in tangent space, step through depth layers along 
+					view direction until heightmap sample is less than current layer depth
+	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
 	***********************************************/
-    float3 viewDir = normalize(mul(EyePosition.xyz, tbn) - mul(IN.worldPos.xyz, tbn));
+    float3 viewDir = normalize(mul(tbn, EyePosition.xyz - IN.worldPos.xyz));
     float2 texCoords = IN.Tex;	// Will be uneffected if not using parallax map
     if (Material.UseParallax)
     {
-        float height = txParallax.Sample(samLinear, texCoords).r;
-        float2 p = viewDir.xy / viewDir.z * (height * Material.ParallaxStrength);
-        texCoords -= p;
+        viewDir.y = -viewDir.y;
+		
+		// Calculate number of layers based on view direction
+        float minLayers = 8;
+        float maxLayers = 96;
+        int numLayers = (int)lerp(maxLayers, minLayers, max(dot(float3(0.0f, 0.0f, 1.0f), viewDir), 0.0f));
+		
+		// How 'deep' each layer will be based on number of layers
+        float layerDepth = 1.0f / numLayers;
+		
+		// Amount TexCoords will shift per layer step
+        float2 p = viewDir.xy * Material.ParallaxStrength;
+        float2 deltaTexCoords = p / numLayers;
+		
+		// Initial values
+        float currentLayerDepth = 0.0f;
+		float2 currentTexCoords = texCoords;
+        float currentDepthMapValue = 1.0f - txParallax.Sample(samLinear, currentTexCoords).r;
+		
+		// Used by SampleGrad which allows texture sampling inside loop
+        float2 dx = ddx(IN.Tex);
+        float2 dy = ddy(IN.Tex);
+
+		// Loop until heightmap value is less than layer depth value
+        while (currentLayerDepth < currentDepthMapValue)
+        {
+			// Shift TexCoords along delta
+            currentTexCoords -= deltaTexCoords;
+			// Sample heightmap (inversed as the heightmaps I'm using are wrong way round)
+            currentDepthMapValue = 1.0f - txParallax.SampleGrad(samLinear, currentTexCoords, dx, dy).r;
+			// Step to next layer
+            currentLayerDepth += layerDepth;
+        }
+		
+		// Update texCoords with new parallaxed coords
+        texCoords = currentTexCoords;
     }
 	
 	/***********************************************

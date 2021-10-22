@@ -139,7 +139,7 @@ void Game::SetupLightsForRender() {
     light.LinearAttenuation = .1f;
     light.QuadraticAttenuation = 0.01f;
 
-    XMFLOAT4 LightPosition(0.0f, 2.5f, -3.0f, 1.0f);
+    XMFLOAT4 LightPosition(0.0f, 4.0f, -4.0f, 1.0f);
     light.Position = LightPosition;
     XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = XMVector3Normalize(LightDirection);

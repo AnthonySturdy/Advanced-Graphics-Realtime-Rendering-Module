@@ -26,7 +26,7 @@ struct _Material {
 		, UseTexture(false)
 		, UseNormal(false)
 		, UseParallax(false)
-		, ParallaxStrength(0.01f)
+		, ParallaxStrength(0.1f)
 		, Padding{ 0.0f, 0.0f, 0.0f }
 	{
 	}
