@@ -97,10 +97,10 @@ HRESULT Mesh::InitialiseMeshData(ID3D11Device* device, ID3D11DeviceContext* cont
 }
 
 /***********************************************
-MARKING SCHEME: Normal Mapping
+MARKING SCHEME: Normal Mapping, Parallax Mapping
 DESCRIPTION: Calculate tangent and binormal for each face/triangle
 ***********************************************/
-void Mesh::PopulateBinormalTangent(std::vector<SimpleVertex>& vertices, std::vector<WORD>& indices) {
+void Mesh::PopulateBinormalTangent(std::vector<SimpleVertex>& vertices, const std::vector<WORD>& indices) {
 	const int faceCount = indices.size() / 3;
 
 	for (int i = 0; i < faceCount; ++i) {

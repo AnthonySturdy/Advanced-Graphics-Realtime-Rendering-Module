@@ -31,7 +31,7 @@ PS_INPUT VS(VS_INPUT input) {
     
     output.Tex = input.Tex;
     
-    output.Norm = mul(float4(input.Norm, 0), World).xyz;
+    output.Norm = mul(input.Norm, (float3x3)World);
     output.Norm = normalize(output.Norm);
     
     output.Tan = mul(input.Tan, (float3x3)World);
