@@ -111,26 +111,37 @@ void GameObject::RenderGUIControls(ID3D11Device* device) {
 		ImGui::DragFloat3("Diffuse", &m_material.Material.Diffuse.x, 0.001f);
 		ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);
 		ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
-		ImGui::Checkbox("Diffuse Texture", (bool*)&m_material.Material.UseTexture);
-		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
-		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
-		ImGui::DragFloat("Parallax Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
 
-		ImGui::Text("Textures");
-		if (ImGui::ImageButton(m_textureResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+		ImGui::Columns(2, 0, false);
+		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
+		if (ImGui::ImageButton(m_textureResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
 			ImGuiFileDialog::Instance()->Close();
 			ImGuiFileDialog::Instance()->OpenDialog("ChooseDiffuseTex", "Choose Diffuse Texture", ".dds", ".");
 		}
-		ImGui::SameLine();
-		if (ImGui::ImageButton(m_normalResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+		ImGui::NextColumn();
+		ImGui::Checkbox("Diffuse Texture", (bool*)&m_material.Material.UseTexture);
+		ImGui::Columns();
+
+		ImGui::Columns(2, 0, false);
+		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
+		if (ImGui::ImageButton(m_normalResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
 			ImGuiFileDialog::Instance()->Close();
 			ImGuiFileDialog::Instance()->OpenDialog("ChooseNormalTex", "Choose Normal Texture", ".dds", ".");
 		}
-		ImGui::SameLine();
-		if (ImGui::ImageButton(m_parallaxResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+		ImGui::NextColumn();
+		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
+		ImGui::Columns();
+
+		ImGui::Columns(2, 0, false);
+		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
+		if (ImGui::ImageButton(m_parallaxResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
 			ImGuiFileDialog::Instance()->Close();
 			ImGuiFileDialog::Instance()->OpenDialog("ChooseHeightTex", "Choose Height Texture", ".dds", ".");
 		}
+		ImGui::NextColumn();
+		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
+		ImGui::DragFloat("Parallax Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
+		ImGui::Columns();
 		
 		if (ImGuiFileDialog::Instance()->Display("ChooseDiffuseTex")) {
 			if (ImGuiFileDialog::Instance()->IsOk()) {
