@@ -104,15 +104,22 @@ void Game::Render()
 
     m_gameObject->Render(m_d3dContext.Get());
 
-    // Render FPS window
-    ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+
+    // Render dockspace
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+    //ImGui::Begin("Game Viewport");
+    //    //ImGui::Image(m_renderTargetView.Get(), ImGui::GetWindowSize());
+    //ImGui::End();
+
+    // Render frames per second window
+    ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
         ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 
-    //ImGui::SetNextWindowSize(ImVec2(375, 250));
     ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
         m_camera->RenderGUIControls();
-        m_gameObject->RenderGUIControls();
+        m_gameObject->RenderGUIControls(m_d3dDevice.Get());
     ImGui::End();
 
     // Render ImGui
@@ -127,6 +134,7 @@ void Game::Render()
     }
 
     Present();
+
 }
 
 void Game::SetupLightsForRender() {
@@ -373,11 +381,11 @@ void Game::CreateResources()
     }
 
     // Obtain the backbuffer for this window which will be the final 3D rendertarget.
-    ComPtr<ID3D11Texture2D> backBuffer;
-    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(backBuffer.GetAddressOf())));
+    ComPtr<ID3D11Texture2D> m_backBuffer;
+    DX::ThrowIfFailed(m_swapChain->GetBuffer(0, IID_PPV_ARGS(m_backBuffer.GetAddressOf())));
 
     // Create a view interface on the rendertarget to use on bind.
-    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(m_backBuffer.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.

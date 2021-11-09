@@ -98,12 +98,13 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 	context->DrawIndexed(NUM_INDICES, 0, 0);
 }
 
-void GameObject::RenderGUIControls() {
+void GameObject::RenderGUIControls(ID3D11Device* device) {
 	if (ImGui::CollapsingHeader("GameObject Controls")) {
 		ImGui::Text("Transform");
 		ImGui::DragFloat3("Position", &m_position.x, 0.01f);
 		ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
 		ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
+
 		ImGui::Text("Material");
 		ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
 		ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
@@ -114,5 +115,54 @@ void GameObject::RenderGUIControls() {
 		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
 		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
 		ImGui::DragFloat("Parallax Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
+
+		ImGui::Text("Textures");
+		if (ImGui::ImageButton(m_textureResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+			ImGuiFileDialog::Instance()->Close();
+			ImGuiFileDialog::Instance()->OpenDialog("ChooseDiffuseTex", "Choose Diffuse Texture", ".dds", ".");
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton(m_normalResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+			ImGuiFileDialog::Instance()->Close();
+			ImGuiFileDialog::Instance()->OpenDialog("ChooseNormalTex", "Choose Normal Texture", ".dds", ".");
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton(m_parallaxResourceView.Get(), ImVec2(ImGui::GetWindowSize().x / 4, ImGui::GetWindowSize().x / 4))) {
+			ImGuiFileDialog::Instance()->Close();
+			ImGuiFileDialog::Instance()->OpenDialog("ChooseHeightTex", "Choose Height Texture", ".dds", ".");
+		}
+		
+		if (ImGuiFileDialog::Instance()->Display("ChooseDiffuseTex")) {
+			if (ImGuiFileDialog::Instance()->IsOk()) {
+				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
+				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
+				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_textureResourceView.ReleaseAndGetAddressOf());
+				if (FAILED(hr))
+					throw 0;
+			}
+			ImGuiFileDialog::Instance()->Close();
+		}
+		if (ImGuiFileDialog::Instance()->Display("ChooseNormalTex")) {
+			if (ImGuiFileDialog::Instance()->IsOk()) {
+				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
+				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
+				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_normalResourceView.ReleaseAndGetAddressOf());
+				if (FAILED(hr))
+					throw 0;
+			}
+			ImGuiFileDialog::Instance()->Close();
+		}
+		if (ImGuiFileDialog::Instance()->Display("ChooseHeightTex")) {
+			if (ImGuiFileDialog::Instance()->IsOk()) {
+				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
+				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
+				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_parallaxResourceView.ReleaseAndGetAddressOf());
+				if (FAILED(hr))
+					throw 0;
+			}
+			ImGuiFileDialog::Instance()->Close();
+		}
+
+
 	}
 }

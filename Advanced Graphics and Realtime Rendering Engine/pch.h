@@ -54,6 +54,7 @@
 #include "External/imgui/imgui.h"
 #include "External/imgui/imgui_impl_win32.h"
 #include "External/imgui/imgui_impl_dx11.h"
+#include "External/imgui/ImGuiFileDialog/ImGuiFileDialog.h"
 
 namespace DX
 {

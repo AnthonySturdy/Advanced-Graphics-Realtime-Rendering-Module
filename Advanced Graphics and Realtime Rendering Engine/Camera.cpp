@@ -41,7 +41,7 @@ void Camera::SetAspectRatio(float val) {
 
 void Camera::RenderGUIControls() {
 	if (ImGui::CollapsingHeader("Active Camera Controls")) {
-		ImGui::DragFloat3("Position", &m_Position.x, 0.015f);
+		ImGui::DragFloat3("Eye", &m_Position.x, 0.015f);
 		ImGui::DragFloat3("LookAt", &m_LookAt.x, 0.015f);
 		ImGui::DragFloat3("Up", &m_Up.x, 0.005f);
 

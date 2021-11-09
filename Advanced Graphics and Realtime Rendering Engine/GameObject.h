@@ -16,7 +16,7 @@ public:
 	void Update(float t, ID3D11DeviceContext* context);
 	void Render(ID3D11DeviceContext* context);
 
-	void RenderGUIControls();
+	void RenderGUIControls(ID3D11Device* device);
 
 	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
