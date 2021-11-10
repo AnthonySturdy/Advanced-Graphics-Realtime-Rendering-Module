@@ -58,7 +58,6 @@ enum LightType {
 	SpotLight = 2
 };
 
-#define MAX_LIGHTS 1
 
 struct Light {
 	Light()
@@ -93,6 +92,7 @@ struct Light {
 	//----------------------------------- (16 byte boundary)
 };  // Total:                              80 bytes ( 5 * 16 )
 
+#define MAX_LIGHTS 1
 
 struct LightPropertiesConstantBuffer {
 	LightPropertiesConstantBuffer()

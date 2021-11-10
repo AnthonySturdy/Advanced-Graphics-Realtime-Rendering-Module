@@ -84,10 +84,10 @@ void GameObject::Update(float t, ID3D11DeviceContext* context) {
 }
 
 void GameObject::Render(ID3D11DeviceContext* context) {
-	ID3D11Buffer* indexBuf = m_mesh->GetVertexBuffer();
+	ID3D11Buffer* vertexBuf = m_mesh->GetVertexBuffer();
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
-	context->IASetVertexBuffers(0, 1, &indexBuf, &stride, &offset);
+	context->IASetVertexBuffers(0, 1, &vertexBuf, &stride, &offset);
 	context->IASetIndexBuffer(m_mesh->GetIndexBuffer(), DXGI_FORMAT_R16_UINT, 0);
 
 	context->PSSetShaderResources(0, 1, m_textureResourceView.GetAddressOf());
@@ -140,7 +140,7 @@ void GameObject::RenderGUIControls(ID3D11Device* device) {
 		}
 		ImGui::NextColumn();
 		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
-		ImGui::DragFloat("Parallax Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
+		ImGui::DragFloat("Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
 		ImGui::Columns();
 		
 		if (ImGuiFileDialog::Instance()->Display("ChooseDiffuseTex")) {
