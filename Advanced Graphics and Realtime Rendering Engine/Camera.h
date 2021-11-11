@@ -16,7 +16,7 @@ private:
 	float m_AspectRatio;
 	float m_NearPlane;
 	float m_FarPlane;
-	DirectX::XMFLOAT3 m_BackgroundColour;
+	DirectX::XMFLOAT4 m_BackgroundColour;
 
 public:
 	Camera(DirectX::XMFLOAT4 position, DirectX::XMFLOAT4 lookAt, DirectX::XMFLOAT4 up, CAMERA_TYPE cameraType, float aspectRatio, float fov, float nearPlane, float farPlane);
@@ -28,7 +28,7 @@ public:
 	float GetFOV() { return m_FOV; }
 	float GetNearPlane() { return m_NearPlane; }
 	float GetFarPlane() { return m_FarPlane; }
-	DirectX::XMFLOAT3 GetBackgroundColour() { return m_BackgroundColour; }
+	DirectX::XMFLOAT4 GetBackgroundColour() { return m_BackgroundColour; }
 
 	DirectX::XMMATRIX CalculateViewMatrix();
 	DirectX::XMMATRIX CalculateProjectionMatrix();
@@ -39,7 +39,7 @@ public:
 	void SetFOV(float val);
 	void SetNearPlane(float val);
 	void SetFarPlane(float val);
-	void SetBackgroundColour(DirectX::XMFLOAT3 val);
+	void SetBackgroundColour(DirectX::XMFLOAT4 val);
 	void SetAspectRatio(float val);
 
 	void RenderGUIControls();

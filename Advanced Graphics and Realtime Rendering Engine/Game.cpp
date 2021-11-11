@@ -67,7 +67,8 @@ void Game::Render()
         return;
     }
 
-    Clear();
+    // Bind render target to intermediate RenderTargetView
+    SetRenderTargetAndClear(m_rttRenderTargetView.Get(), m_rttDepthStencilView.Get());
 
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
@@ -104,16 +105,33 @@ void Game::Render()
 
     m_gameObject->Render(m_d3dContext.Get());
 
+    // Bind render target to back buffer
+    SetRenderTargetAndClear(m_renderTargetView.Get(), m_depthStencilView.Get());
 
     // Render dockspace
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-    //ImGui::Begin("Game Viewport");
-    //    //ImGui::Image(m_renderTargetView.Get(), ImGui::GetWindowSize());
-    //ImGui::End();
+    // Render content in ImGui window
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2());
+    ImGui::Begin("Viewport");
+        // Detect viewport window resize
+        ImVec2 curVpSize = ImGui::GetContentRegionAvail();
+        if (m_viewportSize.x != curVpSize.x || m_viewportSize.y != curVpSize.y) {
+            m_viewportSize = curVpSize;
+            OnViewportSizeChanged();
+        }
+        
+        // Create SRV and render to ImGui window
+        ComPtr<ID3D11Resource> resource;
+        m_rttRenderTargetView->GetResource(resource.ReleaseAndGetAddressOf());
+        ComPtr<ID3D11ShaderResourceView> srv;
+        m_d3dDevice->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
+        ImGui::Image(srv.Get(), m_viewportSize);
+    ImGui::End();
+    ImGui::PopStyleVar();
 
     // Render frames per second window
-    ImGui::Begin("FPS", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking);
+    ImGui::Begin("Performance", (bool*)0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("%.3fms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::End();
 
@@ -160,14 +178,14 @@ void Game::SetupLightsForRender() {
 }
 
 // Helper method to clear the back buffers.
-void Game::Clear()
+void Game::SetRenderTargetAndClear(ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv)
 {
     // Clear the views.
-    XMFLOAT3 clearColour = m_camera->GetBackgroundColour();
-    m_d3dContext->ClearRenderTargetView(m_renderTargetView.Get(), &clearColour.x);
-    m_d3dContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    XMFLOAT4 clearColour = m_camera->GetBackgroundColour();
+    m_d3dContext->ClearRenderTargetView(rtv, &clearColour.x);
+    m_d3dContext->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    m_d3dContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
+    m_d3dContext->OMSetRenderTargets(1, &rtv, dsv);
 
     // Set the viewport.
     CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight));
@@ -221,12 +239,17 @@ void Game::OnWindowSizeChanged(int width, int height)
     m_outputWidth = std::max(width, 1);
     m_outputHeight = std::max(height, 1);
 
-    if (m_camera) 
-        m_camera->SetAspectRatio(width / (float)height);
-
     CreateResources();
 
     // TODO: Game window is being resized.
+}
+
+void Game::OnViewportSizeChanged()
+{
+    if (m_camera)
+        m_camera->SetAspectRatio(m_viewportSize.x / (float)m_viewportSize.y);
+
+    CreateResources();
 }
 
 // Properties
@@ -390,12 +413,32 @@ void Game::CreateResources()
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
     CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
-
     ComPtr<ID3D11Texture2D> depthStencil;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
     CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+
+    // Create intermediate render texture and depth stencil
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTex;
+    D3D11_TEXTURE2D_DESC rttDesc = {};
+    rttDesc.Width = backBufferWidth;
+    rttDesc.Height = backBufferHeight;
+    rttDesc.MipLevels = 1;
+    rttDesc.ArraySize = 1;
+    rttDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    rttDesc.SampleDesc.Count = 1;
+    rttDesc.Usage = D3D11_USAGE_DEFAULT;
+    rttDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    rttDesc.CPUAccessFlags = 0;
+    rttDesc.MiscFlags = 0;
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&rttDesc, nullptr, rttTex.GetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTex.Get(), nullptr, m_rttRenderTargetView.ReleaseAndGetAddressOf()));
+
+    ComPtr<ID3D11Texture2D> rttDepthStencil;
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, rttDepthStencil.GetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilView.ReleaseAndGetAddressOf()));
+    
 
     // TODO: Initialize windows-size dependent objects here.
 }
@@ -410,13 +453,76 @@ void Game::InitialiseImGui(HWND hwnd)
     m_ioImGui->ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     m_ioImGui->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 
-    ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowRounding = 5.0f;
+    style.FrameRounding = 3.0f;
+    style.ItemSpacing = ImVec2(6, 4);
+    style.ItemInnerSpacing = ImVec2(4, 3);
+    style.ScrollbarSize = 10.0f;
+    style.ScrollbarRounding = 20.0f;
+
+    ImVec4* colors = style.Colors;
+    colors[ImGuiCol_Text] = ImVec4(0.86f, 0.93f, 0.89f, 0.78f);
+    colors[ImGuiCol_TextDisabled] = ImVec4(0.86f, 0.93f, 0.89f, 0.28f);
+    colors[ImGuiCol_WindowBg] = ImVec4(0.01f, 0.01f, 0.02f, 1.00f);
+    colors[ImGuiCol_ChildBg] = ImVec4(0.13f, 0.15f, 0.22f, 0.58f);
+    colors[ImGuiCol_PopupBg] = ImVec4(0.13f, 0.15f, 0.22f, 0.90f);
+    colors[ImGuiCol_Border] = ImVec4(0.10f, 0.12f, 0.17f, 0.60f);
+    colors[ImGuiCol_BorderShadow] = ImVec4(0.13f, 0.15f, 0.22f, 0.00f);
+    colors[ImGuiCol_FrameBg] = ImVec4(0.13f, 0.15f, 0.22f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered] = ImVec4(0.03f, 0.03f, 0.03f, 0.78f);
+    colors[ImGuiCol_FrameBgActive] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_TitleBg] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+    colors[ImGuiCol_TitleBgActive] = ImVec4(0.12f, 0.00f, 0.39f, 0.87f);
+    colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.13f, 0.15f, 0.22f, 0.75f);
+    colors[ImGuiCol_MenuBarBg] = ImVec4(0.13f, 0.15f, 0.22f, 0.47f);
+    colors[ImGuiCol_ScrollbarBg] = ImVec4(0.13f, 0.15f, 0.22f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.03f, 0.03f, 0.03f, 0.78f);
+    colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_CheckMark] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.18f, 0.22f, 0.32f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_Button] = ImVec4(0.24f, 0.29f, 0.42f, 1.00f);
+    colors[ImGuiCol_ButtonHovered] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_ButtonActive] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_Header] = ImVec4(0.03f, 0.03f, 0.03f, 0.76f);
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.03f, 0.03f, 0.03f, 0.86f);
+    colors[ImGuiCol_HeaderActive] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_Separator] = ImVec4(0.50f, 0.50f, 0.50f, 0.60f);
+    colors[ImGuiCol_SeparatorHovered] = ImVec4(0.60f, 0.60f, 0.70f, 1.00f);
+    colors[ImGuiCol_SeparatorActive] = ImVec4(0.70f, 0.70f, 0.90f, 1.00f);
+    colors[ImGuiCol_ResizeGrip] = ImVec4(0.47f, 0.77f, 0.83f, 0.04f);
+    colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.03f, 0.03f, 0.03f, 0.78f);
+    colors[ImGuiCol_ResizeGripActive] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_Tab] = ImVec4(0.13f, 0.15f, 0.22f, 0.40f);
+    colors[ImGuiCol_TabHovered] = ImVec4(0.56f, 0.56f, 0.56f, 1.00f);
+    colors[ImGuiCol_TabActive] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_TabUnfocused] = ImVec4(0.13f, 0.15f, 0.22f, 0.40f);
+    colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.13f, 0.15f, 0.22f, 0.70f);
+    colors[ImGuiCol_DockingPreview] = ImVec4(0.56f, 0.56f, 0.56f, 0.30f);
+    colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_PlotLines] = ImVec4(0.86f, 0.93f, 0.89f, 0.63f);
+    colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_PlotHistogram] = ImVec4(0.86f, 0.93f, 0.89f, 0.63f);
+    colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.03f, 0.03f, 0.03f, 1.00f);
+    colors[ImGuiCol_TableHeaderBg] = ImVec4(0.27f, 0.27f, 0.38f, 1.00f);
+    colors[ImGuiCol_TableBorderStrong] = ImVec4(0.31f, 0.31f, 0.45f, 1.00f);
+    colors[ImGuiCol_TableBorderLight] = ImVec4(0.26f, 0.26f, 0.28f, 1.00f);
+    colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
+    colors[ImGuiCol_TextSelectedBg] = ImVec4(0.03f, 0.03f, 0.03f, 0.43f);
+    colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_NavHighlight] = ImVec4(0.45f, 0.45f, 0.90f, 0.80f);
+    colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+    colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+    colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.13f, 0.15f, 0.22f, 0.73f);
+
     if (m_ioImGui->ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
-        style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 

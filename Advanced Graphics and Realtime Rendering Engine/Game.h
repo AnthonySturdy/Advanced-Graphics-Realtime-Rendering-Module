@@ -33,6 +33,7 @@ public:
     void OnSuspending();
     void OnResuming();
     void OnWindowSizeChanged(int width, int height);
+    void OnViewportSizeChanged();
 
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
@@ -44,7 +45,7 @@ private:
 
     void SetupLightsForRender();
 
-    void Clear();
+    void SetRenderTargetAndClear(ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv);
     void Present();
 
     void CreateDevice();
@@ -69,6 +70,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_depthStencilView;
 
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetView;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_rttDepthStencilView;
+    ImVec2                                          m_viewportSize;
 
     // Rendering loop timer.
     DX::StepTimer                                   m_timer;

@@ -2,7 +2,7 @@
 #include "Camera.h"
 
 Camera::Camera(DirectX::XMFLOAT4 position, DirectX::XMFLOAT4 lookAt, DirectX::XMFLOAT4 up, CAMERA_TYPE cameraType, float aspectRatio, float fov, float nearPlane, float farPlane) :
-	m_Position(position), m_LookAt(lookAt), m_Up(up), m_CameraType(cameraType), m_AspectRatio(aspectRatio), m_FOV(fov), m_NearPlane(nearPlane), m_FarPlane(farPlane), m_BackgroundColour(DirectX::Colors::MidnightBlue)
+	m_Position(position), m_LookAt(lookAt), m_Up(up), m_CameraType(cameraType), m_AspectRatio(aspectRatio), m_FOV(fov), m_NearPlane(nearPlane), m_FarPlane(farPlane), m_BackgroundColour(DirectX::XMFLOAT4(19/255.f, 18/255.f, 24/255.f, 1.0f))
 { }
 
 Camera::~Camera() { }
@@ -31,7 +31,7 @@ void Camera::SetFarPlane(float val) {
 	m_FarPlane = val;
 }
 
-void Camera::SetBackgroundColour(DirectX::XMFLOAT3 val) {
+void Camera::SetBackgroundColour(DirectX::XMFLOAT4 val) {
 	m_BackgroundColour = val;
 }
 
