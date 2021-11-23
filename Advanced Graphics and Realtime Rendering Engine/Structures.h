@@ -19,7 +19,7 @@ struct ConstantBuffer {
 struct _Material {
 	_Material()
 		: Emissive(0.0f, 0.0f, 0.0f, 1.0f)
-		, Ambient(0.1f, 0.1f, 0.1f, 1.0f)
+		, Ambient(0.2f, 0.2f, 0.2f, 1.0f)
 		, Diffuse(1.0f, 1.0f, 1.0f, 1.0f)
 		, Specular(1.0f, 1.0f, 1.0f, 1.0f)
 		, SpecularPower(128.0f)

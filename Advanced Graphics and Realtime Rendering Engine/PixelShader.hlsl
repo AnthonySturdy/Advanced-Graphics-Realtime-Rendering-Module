@@ -154,7 +154,7 @@ float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
 	
     const float minLayers = 16.0f;
     const float maxLayers = 64.0f;
-    float numLayers = lerp(maxLayers, minLayers, abs(dot(float3(0.0f, 0.0f, 1.0f), lightDir)));
+    const float numLayers = lerp(maxLayers, minLayers, abs(dot(float3(0.0f, 0.0f, 1.0f), lightDir)));
 
     float2 currentTexCoords = initialTexCoords;
     float currentDepthMapValue = 1.0f - txParallax.Sample(samLinear, currentTexCoords).r;
@@ -175,8 +175,7 @@ float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
         currentLayerDepth -= layerDepth;
     }
 
-    float r = currentLayerDepth > currentDepthMapValue ? 0.0f : 1.0f;
-    return r;
+    return currentLayerDepth > currentDepthMapValue ? 0.0f : 1.0f;
 }
 
 //--------------------------------------------------------------------------------------
@@ -192,6 +191,7 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 	DESCRIPTION:	Calculate view direction in tangent space, step through depth layers along 
 					view direction until heightmap sample is less than current layer depth
 	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
+					https://stackoverflow.com/questions/55089830/adding-shadows-to-parallax-occlusion-map
 	***********************************************/
     float3 viewDir = normalize(mul(tbn, EyePosition.xyz - IN.worldPos.xyz));
     float2 texCoords = IN.Tex;	// Will be uneffected if not using parallax map
@@ -258,15 +258,14 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 
 	float4 emissive = Material.Emissive;
 	float4 ambient = Material.Ambient * GlobalAmbient;
-	float4 diffuse = Material.Diffuse * lit.Diffuse;
-	float4 specular = Material.Specular * lit.Specular;
+    float4 diffuse = Material.Diffuse * lit.Diffuse * shadowMultiplier;
+    float4 specular = Material.Specular * lit.Specular * shadowMultiplier;
 
 	if (Material.UseTexture) {
 		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
-    float4 finalColor = (emissive + ambient + diffuse + specular) * (texColor * 2);
-    finalColor.rgb *= shadowMultiplier;
+    float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 	
     return finalColor;
 }
