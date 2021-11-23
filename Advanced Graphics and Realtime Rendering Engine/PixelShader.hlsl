@@ -146,52 +146,37 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 	return totalResult;
 }
 
-float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords, float initialHeight)
+float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
 {
-    float shadowMultiplier = 0;
-    const float minLayers = 15;
-    const float maxLayers = 30;
+	// Skip if pixel is facing away from light source
+    if (dot(float3(0.0f, 0.0f, 1.0f), lightDir) <= 0.0f)
+        return 0.0f;
 	
-    lightDir.y = -lightDir.y;
-	
-    if (dot(float3(0.0f, 0.0f, 1.0f), lightDir) > 0)
-    {
-        float numSamplesUnderSurface = 0;
-        float numLayers = lerp(maxLayers, minLayers, abs(dot(float3(0.0f, 0.0f, 1.0f), lightDir)));
-        float layerHeight = initialHeight / numLayers;
-        float2 texStep = Material.ParallaxStrength * lightDir.xy / lightDir.z / numLayers / 2.0f;
-		
-        float currentLayerHeight = initialHeight - layerHeight;
-        float2 currentTexCoords = initialTexCoords + texStep;
-        float depthFromTexture = 1.0f - txParallax.Sample(samLinear, currentTexCoords).r;
-        int stepIndex = 1;
-		
-        float2 dx = ddx(initialTexCoords);
-        float2 dy = ddy(initialTexCoords);
-		
-        while (currentLayerHeight > 0.0f)
-        {
-            if (depthFromTexture < currentLayerHeight)
-            {
-                numSamplesUnderSurface++;
-                float newShadowMult = (currentLayerHeight - depthFromTexture) * (1.0f - stepIndex / numLayers);
-                shadowMultiplier = max(shadowMultiplier, newShadowMult);
-            }
+    const float minLayers = 16.0f;
+    const float maxLayers = 64.0f;
+    float numLayers = lerp(maxLayers, minLayers, abs(dot(float3(0.0f, 0.0f, 1.0f), lightDir)));
 
-            stepIndex += 1;
-            currentLayerHeight -= layerHeight;
-            currentTexCoords += texStep;
-            depthFromTexture - txDiffuse.SampleGrad(samLinear, currentTexCoords, dx, dy);
-			
-            //if (currentTexCoords.x > 1.0 || currentTexCoords.y > 1.0 || currentTexCoords.x < 0.0 || currentTexCoords.y < 0.0)
-            //    return 0.0f;
-        }
-		
-        if (numSamplesUnderSurface < 1)
-            shadowMultiplier = 0.0f;
-    }
+    float2 currentTexCoords = initialTexCoords;
+    float currentDepthMapValue = 1.0f - txParallax.Sample(samLinear, currentTexCoords).r;
+    float currentLayerDepth = currentDepthMapValue;
+
+    float layerDepth = 1.0f / numLayers;
+    float2 P = lightDir.xy / lightDir.z * Material.ParallaxStrength;
+    float2 deltaTexCoords = P / numLayers;
+
+    float2 dx = ddx(initialTexCoords);
+    float2 dy = ddy(initialTexCoords);
 	
-    return shadowMultiplier;
+	// Loop through layers until collision is found
+    while (currentLayerDepth <= currentDepthMapValue && currentLayerDepth > 0.0f)
+    {
+        currentTexCoords += deltaTexCoords;
+        currentDepthMapValue = 1.0f - txParallax.SampleGrad(samLinear, currentTexCoords, dx, dy).r;
+        currentLayerDepth -= layerDepth;
+    }
+
+    float r = currentLayerDepth > currentDepthMapValue ? 0.0f : 1.0f;
+    return r;
 }
 
 //--------------------------------------------------------------------------------------
@@ -250,11 +235,10 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 		// Update texCoords with new parallaxed coords
         texCoords = currentTexCoords;
 		
-		
 		// Self shadowing
-        float3 L = normalize(mul(tbn, Lights[0].Position.xyz - IN.worldPos.xyz));
-        shadowMultiplier = CalculateParallaxSelfShadow(L, texCoords, currentDepthMapValue);
-
+        float3 L = mul(tbn, normalize(Lights[0].Position.xyz - IN.worldPos.xyz));
+        L.y = -L.y;
+        shadowMultiplier = CalculateParallaxSelfShadow(L, texCoords);
     }
 	
 	/***********************************************
@@ -281,7 +265,8 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
-    float4 finalColor = (emissive + ambient + pow((1.0 - shadowMultiplier), 4.0) * diffuse + specular) * texColor;
+    float4 finalColor = (emissive + ambient + diffuse + specular) * (texColor * 2);
+    finalColor.rgb *= shadowMultiplier;
 	
     return finalColor;
 }
