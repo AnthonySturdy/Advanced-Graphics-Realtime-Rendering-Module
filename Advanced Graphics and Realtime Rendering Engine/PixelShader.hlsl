@@ -146,6 +146,54 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 	return totalResult;
 }
 
+float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords, float initialHeight)
+{
+    float shadowMultiplier = 0;
+    const float minLayers = 15;
+    const float maxLayers = 30;
+	
+    lightDir.y = -lightDir.y;
+	
+    if (dot(float3(0.0f, 0.0f, 1.0f), lightDir) > 0)
+    {
+        float numSamplesUnderSurface = 0;
+        float numLayers = lerp(maxLayers, minLayers, abs(dot(float3(0.0f, 0.0f, 1.0f), lightDir)));
+        float layerHeight = initialHeight / numLayers;
+        float2 texStep = Material.ParallaxStrength * lightDir.xy / lightDir.z / numLayers / 2.0f;
+		
+        float currentLayerHeight = initialHeight - layerHeight;
+        float2 currentTexCoords = initialTexCoords + texStep;
+        float depthFromTexture = 1.0f - txParallax.Sample(samLinear, currentTexCoords).r;
+        int stepIndex = 1;
+		
+        float2 dx = ddx(initialTexCoords);
+        float2 dy = ddy(initialTexCoords);
+		
+        while (currentLayerHeight > 0.0f)
+        {
+            if (depthFromTexture < currentLayerHeight)
+            {
+                numSamplesUnderSurface++;
+                float newShadowMult = (currentLayerHeight - depthFromTexture) * (1.0f - stepIndex / numLayers);
+                shadowMultiplier = max(shadowMultiplier, newShadowMult);
+            }
+
+            stepIndex += 1;
+            currentLayerHeight -= layerHeight;
+            currentTexCoords += texStep;
+            depthFromTexture - txDiffuse.SampleGrad(samLinear, currentTexCoords, dx, dy);
+			
+            //if (currentTexCoords.x > 1.0 || currentTexCoords.y > 1.0 || currentTexCoords.x < 0.0 || currentTexCoords.y < 0.0)
+            //    return 0.0f;
+        }
+		
+        if (numSamplesUnderSurface < 1)
+            shadowMultiplier = 0.0f;
+    }
+	
+    return shadowMultiplier;
+}
+
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
@@ -155,13 +203,14 @@ float4 PS(PS_INPUT IN) : SV_TARGET
     float3x3 tbn = float3x3(IN.Tan, IN.Binorm, IN.Norm);
 	
 	/***********************************************
-	MARKING SCHEME: Parallax Mapping
+	MARKING SCHEME: Parallax Occlusion Mapping and Self Shadowing
 	DESCRIPTION:	Calculate view direction in tangent space, step through depth layers along 
 					view direction until heightmap sample is less than current layer depth
 	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
 	***********************************************/
     float3 viewDir = normalize(mul(tbn, EyePosition.xyz - IN.worldPos.xyz));
     float2 texCoords = IN.Tex;	// Will be uneffected if not using parallax map
+    float shadowMultiplier = 1.0f;
     if (Material.UseParallax)
     {
         viewDir.y = -viewDir.y;
@@ -200,6 +249,12 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 		
 		// Update texCoords with new parallaxed coords
         texCoords = currentTexCoords;
+		
+		
+		// Self shadowing
+        float3 L = normalize(mul(tbn, Lights[0].Position.xyz - IN.worldPos.xyz));
+        shadowMultiplier = CalculateParallaxSelfShadow(L, texCoords, currentDepthMapValue);
+
     }
 	
 	/***********************************************
@@ -226,9 +281,9 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
-	float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
-
-	return finalColor;
+    float4 finalColor = (emissive + ambient + pow((1.0 - shadowMultiplier), 4.0) * diffuse + specular) * texColor;
+	
+    return finalColor;
 }
 
 //--------------------------------------------------------------------------------------
