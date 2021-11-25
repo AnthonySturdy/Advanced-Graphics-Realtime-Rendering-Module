@@ -2,6 +2,7 @@
 #include "Structures.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "Camera.h"
 
 #include <vector>
 
@@ -16,13 +17,15 @@ public:
 	void Update(float t, ID3D11DeviceContext* context);
 	void Render(ID3D11DeviceContext* context);
 
-	void RenderGUIControls(ID3D11Device* device);
+	void RenderGUIControls(ID3D11Device* device, Camera* camera);
 
 	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
 	std::shared_ptr<Shader> GetShader() { return m_shader; }
+	DirectX::XMFLOAT4X4 GetWorld() { return m_world; }
 
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
+	void SetWorld(DirectX::XMFLOAT4X4 w) { m_world = w; }
 
 private:
 	DirectX::XMFLOAT3 m_position;

@@ -7,7 +7,12 @@ using namespace DirectX;
 
 GameObject::GameObject() : m_position(XMFLOAT3()), m_rotation(XMFLOAT3()), m_scale(XMFLOAT3(3, 3, 3)), m_world(XMFLOAT4X4()) {
 	// Initialise world matrix
-	XMStoreFloat4x4(&m_world, XMMatrixIdentity());
+	XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
+	XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
+	XMMATRIX translation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
+
+	XMMATRIX world = scale * rotation * translation;
+	XMStoreFloat4x4(&m_world, world);
 }
 
 GameObject::~GameObject() {
@@ -72,13 +77,13 @@ void GameObject::InitShader(ID3D11Device* device, const WCHAR* vertexShaderPathW
 void GameObject::Update(float t, ID3D11DeviceContext* context) {
 	static float cummulativeTime = 0;
 	cummulativeTime += t;
-
-	XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
-	XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
-	XMMATRIX translation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
 	
-	XMMATRIX world = scale * rotation * translation;
-	XMStoreFloat4x4(&m_world, world);
+	//XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
+	//XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
+	//XMMATRIX translation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
+	//
+	//XMMATRIX world = scale * rotation * translation;
+	//XMStoreFloat4x4(&m_world, world);
 
 	context->UpdateSubresource(m_materialConstantBuffer.Get(), 0, nullptr, &m_material, 0, 0);
 }
@@ -98,13 +103,52 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 	context->DrawIndexed(NUM_INDICES, 0, 0);
 }
 
-void GameObject::RenderGUIControls(ID3D11Device* device) {
+void GameObject::RenderGUIControls(ID3D11Device* device, Camera* camera) {
 	if (ImGui::CollapsingHeader("GameObject Controls")) {
+		// Transform controls
+		static ImGuizmo::OPERATION currentGizmoOperation(ImGuizmo::TRANSLATE);
+		static ImGuizmo::MODE currentGizmoMode(ImGuizmo::LOCAL);
+
 		ImGui::Text("Transform");
+		if (ImGui::IsKeyPressed('Q'))
+			currentGizmoOperation = ImGuizmo::TRANSLATE;
+		if (ImGui::IsKeyPressed('W'))
+			currentGizmoOperation = ImGuizmo::ROTATE;
+		if (ImGui::IsKeyPressed('E')) 
+			currentGizmoOperation = ImGuizmo::SCALE;
+		if (ImGui::IsKeyPressed('R'))
+			currentGizmoOperation = ImGuizmo::UNIVERSAL;
+		if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
+			currentGizmoOperation = ImGuizmo::TRANSLATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
+			currentGizmoOperation = ImGuizmo::ROTATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
+			currentGizmoOperation = ImGuizmo::SCALE;
+
+		if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+			currentGizmoMode = ImGuizmo::LOCAL;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+			currentGizmoMode = ImGuizmo::WORLD;
+
 		ImGui::DragFloat3("Position", &m_position.x, 0.01f);
 		ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
 		ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
 
+		// Gizmo
+		DirectX::XMFLOAT4X4 view;
+		DirectX::XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&view, camera->CalculateViewMatrix());
+		XMStoreFloat4x4(&proj, camera->CalculateProjectionMatrix());
+		DirectX::XMFLOAT4X4 newWorld;
+		ImGuizmo::RecomposeMatrixFromComponents(&m_position.x, &m_rotation.x, &m_scale.x, &newWorld.m[0][0]);
+		ImGuizmo::Manipulate(&view.m[0][0], &proj.m[0][0], currentGizmoOperation, currentGizmoMode, &newWorld.m[0][0]);
+		ImGuizmo::DecomposeMatrixToComponents(&newWorld.m[0][0], &m_position.x, &m_rotation.x, &m_scale.x);
+		m_world = newWorld;
+
+		// Material controls
 		ImGui::Text("Material");
 		ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
 		ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
@@ -112,6 +156,7 @@ void GameObject::RenderGUIControls(ID3D11Device* device) {
 		ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);
 		ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
 
+		// Texture selection
 		ImGui::Columns(2, 0, false);
 		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
 		if (ImGui::ImageButton(m_textureResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
@@ -173,7 +218,5 @@ void GameObject::RenderGUIControls(ID3D11Device* device) {
 			}
 			ImGuiFileDialog::Instance()->Close();
 		}
-
-
 	}
 }

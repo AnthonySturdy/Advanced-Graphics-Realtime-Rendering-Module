@@ -74,6 +74,7 @@ void Game::Render()
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 
     // get the game object world transform
     XMMATRIX mGO = XMLoadFloat4x4(m_gameObject->GetTransform());
@@ -127,6 +128,10 @@ void Game::Render()
         ComPtr<ID3D11ShaderResourceView> srv;
         m_d3dDevice->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
         ImGui::Image(srv.Get(), m_viewportSize);
+
+        // Set up ImGuizmo
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, m_viewportSize.x, m_viewportSize.y);
     ImGui::End();
     ImGui::PopStyleVar();
 
@@ -137,7 +142,7 @@ void Game::Render()
 
     ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
         m_camera->RenderGUIControls();
-        m_gameObject->RenderGUIControls(m_d3dDevice.Get());
+        m_gameObject->RenderGUIControls(m_d3dDevice.Get(), m_camera.get());
     ImGui::End();
 
     // Render ImGui

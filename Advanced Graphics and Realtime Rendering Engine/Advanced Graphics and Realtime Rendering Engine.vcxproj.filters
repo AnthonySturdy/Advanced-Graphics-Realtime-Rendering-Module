@@ -20,6 +20,9 @@
     <Filter Include="External\imgui\ImGuiFileDialog">
       <UniqueIdentifier>{2690f008-8e43-48c1-8aa2-8374e337e9fa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External\imgui\ImGuizmo">
+      <UniqueIdentifier>{785e17cc-a700-4030-b3e0-8bf9c8186a52}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -57,6 +60,24 @@
     <ClInclude Include="External\imgui\ImGuiFileDialog\ImGuiFileDialog.h">
       <Filter>External\imgui\ImGuiFileDialog</Filter>
     </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\GraphEditor.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\ImCurveEdit.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\ImGradient.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\ImGuizmo.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\ImSequencer.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
+    <ClInclude Include="External\imgui\ImGuizmo\ImZoomSlider.h">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -89,6 +110,21 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="External\imgui\ImGuiFileDialog\ImGuiFileDialog.cpp">
       <Filter>External\imgui\ImGuiFileDialog</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo\GraphEditor.cpp">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo\ImCurveEdit.cpp">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo\ImGradient.cpp">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo\ImGuizmo.cpp">
+      <Filter>External\imgui\ImGuizmo</Filter>
+    </ClCompile>
+    <ClCompile Include="External\imgui\ImGuizmo\ImSequencer.cpp">
+      <Filter>External\imgui\ImGuizmo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
