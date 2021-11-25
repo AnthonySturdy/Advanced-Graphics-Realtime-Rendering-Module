@@ -77,13 +77,6 @@ void GameObject::InitShader(ID3D11Device* device, const WCHAR* vertexShaderPathW
 void GameObject::Update(float t, ID3D11DeviceContext* context) {
 	static float cummulativeTime = 0;
 	cummulativeTime += t;
-	
-	//XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
-	//XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));
-	//XMMATRIX translation = XMMatrixTranslationFromVector(XMLoadFloat3(&m_position));
-	//
-	//XMMATRIX world = scale * rotation * translation;
-	//XMStoreFloat4x4(&m_world, world);
 
 	context->UpdateSubresource(m_materialConstantBuffer.Get(), 0, nullptr, &m_material, 0, 0);
 }
@@ -118,6 +111,7 @@ void GameObject::RenderGUIControls(ID3D11Device* device, Camera* camera) {
 			currentGizmoOperation = ImGuizmo::SCALE;
 		if (ImGui::IsKeyPressed('R'))
 			currentGizmoOperation = ImGuizmo::UNIVERSAL;
+
 		if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
 			currentGizmoOperation = ImGuizmo::TRANSLATE;
 		ImGui::SameLine();
