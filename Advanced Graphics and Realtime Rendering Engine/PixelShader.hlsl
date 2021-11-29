@@ -149,7 +149,7 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
 {
 	// Skip if pixel is facing away from light source
-    if (dot(float3(0.0f, 0.0f, 1.0f), lightDir) <= 0.0f)
+    if (dot(float3(0.0f, 0.0f, 1.0f), lightDir) <= 0.01f)
         return 0.0f;
 	
     const float minLayers = 16.0f;
@@ -175,7 +175,7 @@ float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
         currentLayerDepth -= layerDepth;
     }
 
-    return currentLayerDepth > currentDepthMapValue ? 0.0f : 1.0f;
+    return currentLayerDepth > currentDepthMapValue ? pow(1.0f - currentLayerDepth, 1.5f) : 1.0f;
 }
 
 //--------------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ float4 PS(PS_INPUT IN) : SV_TARGET
         L.y = -L.y;
         shadowMultiplier = CalculateParallaxSelfShadow(L, texCoords);
     }
-	
+
 	/***********************************************
 	MARKING SCHEME: Normal Mapping
 	DESCRIPTION: Map sampling, normal value decompression, transformation to tangent space
