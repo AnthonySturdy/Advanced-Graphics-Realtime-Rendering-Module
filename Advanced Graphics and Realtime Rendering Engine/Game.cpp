@@ -76,6 +76,10 @@ void Game::Render()
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 
+    //
+    // Geometry Render Pass
+    //
+
     // get the game object world transform
     XMMATRIX mGO = XMLoadFloat4x4(m_gameObject->GetTransform());
 
@@ -104,13 +108,20 @@ void Game::Render()
     ID3D11Buffer* materialCB = m_gameObject->GetMaterialConstantBuffer();
     m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
 
+    shader = nullptr;
+
     m_gameObject->Render(m_d3dContext.Get());
+
+
+    //
+	// Gui Render to back buffer
+	//
 
     // Bind render target to back buffer
     SetRenderTargetAndClear(m_renderTargetView.Get(), m_depthStencilView.Get());
 
     // Render dockspace
-    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
     // Render content in ImGui window
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2());
@@ -457,6 +468,7 @@ void Game::InitialiseImGui(HWND hwnd)
     m_ioImGui->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
     m_ioImGui->ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
     m_ioImGui->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+    m_ioImGui->ConfigWindowsMoveFromTitleBarOnly = true;
 
     ImGui::StyleColorsClassic();
 

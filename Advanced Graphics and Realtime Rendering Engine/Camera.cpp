@@ -60,9 +60,9 @@ void Camera::RenderGUIControls() {
 }
 
 DirectX::XMMATRIX Camera::CalculateViewMatrix() {
-	DirectX::XMVECTOR eye = DirectX::XMLoadFloat4(&m_Position);
-	DirectX::XMVECTOR at = DirectX::XMLoadFloat4(&m_LookAt);
-	DirectX::XMVECTOR up = DirectX::XMLoadFloat4(&m_Up);
+	const DirectX::XMVECTOR eye = DirectX::XMLoadFloat4(&m_Position);
+	const DirectX::XMVECTOR at = DirectX::XMLoadFloat4(&m_LookAt);
+	const DirectX::XMVECTOR up = DirectX::XMLoadFloat4(&m_Up);
 
 	return DirectX::XMMatrixLookAtLH(eye, at, up);
 }
