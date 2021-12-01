@@ -4,6 +4,7 @@
 #include "Structures.h"
 
 #include "GameObject.h"
+#include "GameObject_Cube.h"
 #include "Camera.h"
 
 // A basic game implementation that creates a D3D11 device and
@@ -45,7 +46,7 @@ private:
 
     void SetupLightsForRender();
 
-    void SetRenderTargetAndClear(ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv);
+    void SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthStencilView* dsv, int numViews = 1);
     void Present();
 
     void CreateDevice();
@@ -70,8 +71,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_depthStencilView;
 
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetView;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_rttDepthStencilView;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetViews;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetViewsHDR;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_rttDepthStencilViews;
     ImVec2                                          m_viewportSize;
 
     // Rendering loop timer.

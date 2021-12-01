@@ -75,6 +75,11 @@ struct PS_INPUT {
     float3 Binorm : BINORMAL;
 };
 
+struct PS_OUTPUT {
+    float4 colour : SV_Target0;
+    float4 HDR : SV_Target1;
+};
+
 float4 DoDiffuse(Light light, float3 L, float3 N) {
 	float NdotL = max(0, dot(N, L));
 	return light.Color * NdotL;
@@ -182,7 +187,7 @@ float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
 // Pixel Shader
 //--------------------------------------------------------------------------------------
 
-float4 PS(PS_INPUT IN) : SV_TARGET
+PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 {
     float3x3 tbn = float3x3(IN.Tan, IN.Binorm, IN.Norm);
 	
@@ -266,8 +271,16 @@ float4 PS(PS_INPUT IN) : SV_TARGET
 	}
 
     float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
-	
-    return finalColor;
+
+    PS_OUTPUT output = (PS_OUTPUT) 0;
+    output.colour = finalColor;
+    float brightness = dot(finalColor.rgb, float3(0.2126, 0.7152, 0.0722));
+    if (brightness > 1.0)
+        output.HDR = float4(finalColor.rgb, 1.0);
+    else
+        output.HDR = float4(0.0, 0.0, 0.0, 0.0);
+
+    return output;
 }
 
 //--------------------------------------------------------------------------------------

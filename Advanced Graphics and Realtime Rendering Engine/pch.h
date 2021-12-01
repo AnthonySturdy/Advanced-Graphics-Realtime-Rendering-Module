@@ -48,6 +48,7 @@
 #include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include "SimpleMath.h"
 

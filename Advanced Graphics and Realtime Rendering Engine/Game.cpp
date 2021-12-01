@@ -68,7 +68,10 @@ void Game::Render()
     }
 
     // Bind render target to intermediate RenderTargetView
-    SetRenderTargetAndClear(m_rttRenderTargetView.Get(), m_rttDepthStencilView.Get());
+    ID3D11RenderTargetView** rtvs[2];
+    rtvs[0] = m_rttRenderTargetViews.GetAddressOf();
+    rtvs[1] = m_rttRenderTargetViewsHDR.GetAddressOf();
+    SetRenderTargetAndClear(rtvs[0], m_rttDepthStencilViews.Get(), 2);
 
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
@@ -77,7 +80,7 @@ void Game::Render()
     ImGuizmo::BeginFrame();
 
     //
-    // Geometry Render Pass
+    // Geometry render pass
     //
 
     // get the game object world transform
@@ -112,13 +115,18 @@ void Game::Render()
 
     m_gameObject->Render(m_d3dContext.Get());
 
+    //
+    // Post processing pass
+    //
+
+
 
     //
-	// Gui Render to back buffer
+	// Gui render pass to back buffer
 	//
 
     // Bind render target to back buffer
-    SetRenderTargetAndClear(m_renderTargetView.Get(), m_depthStencilView.Get());
+    SetRenderTargetAndClear(m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
     // Render dockspace
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
@@ -135,7 +143,7 @@ void Game::Render()
         
         // Create SRV and render to ImGui window
         ComPtr<ID3D11Resource> resource;
-        m_rttRenderTargetView->GetResource(resource.ReleaseAndGetAddressOf());
+        m_rttRenderTargetViews->GetResource(resource.ReleaseAndGetAddressOf());
         ComPtr<ID3D11ShaderResourceView> srv;
         m_d3dDevice->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
         ImGui::Image(srv.Get(), m_viewportSize);
@@ -194,14 +202,14 @@ void Game::SetupLightsForRender() {
 }
 
 // Helper method to clear the back buffers.
-void Game::SetRenderTargetAndClear(ID3D11RenderTargetView* rtv, ID3D11DepthStencilView* dsv)
+void Game::SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthStencilView* dsv, int numViews)
 {
     // Clear the views.
     XMFLOAT4 clearColour = m_camera->GetBackgroundColour();
-    m_d3dContext->ClearRenderTargetView(rtv, &clearColour.x);
+    m_d3dContext->ClearRenderTargetView(*rtv, &clearColour.x);
     m_d3dContext->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    m_d3dContext->OMSetRenderTargets(1, &rtv, dsv);
+    m_d3dContext->OMSetRenderTargets(numViews, rtv, dsv);
 
     // Set the viewport.
     CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight));
@@ -449,11 +457,15 @@ void Game::CreateResources()
     rttDesc.CPUAccessFlags = 0;
     rttDesc.MiscFlags = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&rttDesc, nullptr, rttTex.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTex.Get(), nullptr, m_rttRenderTargetView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTex.Get(), nullptr, m_rttRenderTargetViews.ReleaseAndGetAddressOf()));
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTexHDR;
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&rttDesc, nullptr, rttTexHDR.GetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTexHDR.Get(), nullptr, m_rttRenderTargetViewsHDR.ReleaseAndGetAddressOf()));
 
     ComPtr<ID3D11Texture2D> rttDepthStencil;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, rttDepthStencil.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilViews.ReleaseAndGetAddressOf()));
     
 
     // TODO: Initialize windows-size dependent objects here.
@@ -580,7 +592,7 @@ void Game::CreateCameras(int width, int height) {
 
 void Game::CreateGameObjects() {
     // Create and initialise GameObject
-    m_gameObject = std::make_shared<GameObject>();
+    m_gameObject = std::make_shared<GameObject_Cube>();
     m_gameObject->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {

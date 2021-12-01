@@ -4,20 +4,18 @@
 #include "Mesh.h"
 #include "Camera.h"
 
-#include <vector>
-
 class GameObject {
 public:
 	GameObject();
 	~GameObject();
 
-	HRESULT InitMesh(ID3D11Device* device, ID3D11DeviceContext* context);
-	void InitShader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, const WCHAR* pixelShaderPathWithoutExt, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
+	virtual HRESULT InitMesh(ID3D11Device* device, ID3D11DeviceContext* context);
+	virtual void InitShader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, const WCHAR* pixelShaderPathWithoutExt, D3D11_INPUT_ELEMENT_DESC* vertexLayout, UINT numElements);
 
-	void Update(float t, ID3D11DeviceContext* context);
-	void Render(ID3D11DeviceContext* context);
+	virtual void Update(float t, ID3D11DeviceContext* context);
+	virtual void Render(ID3D11DeviceContext* context);
 
-	void RenderGUIControls(ID3D11Device* device, Camera* camera);
+	virtual void RenderGUIControls(ID3D11Device* device, Camera* camera);
 
 	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
@@ -27,15 +25,12 @@ public:
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
 	void SetWorld(DirectX::XMFLOAT4X4 w) { m_world = w; }
 
-private:
+protected:
 	DirectX::XMFLOAT3 m_position;
 	DirectX::XMFLOAT3 m_rotation;
 	DirectX::XMFLOAT3 m_scale;
 	DirectX::XMFLOAT4X4 m_world;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_textureResourceView;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_normalResourceView;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_parallaxResourceView;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_samplerLinear;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_materialConstantBuffer;
 	

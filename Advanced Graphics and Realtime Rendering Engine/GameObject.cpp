@@ -24,19 +24,6 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	// Set primitive topology
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// load and setup textures
-	HRESULT hr = CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-basecolor.dds", nullptr, &m_textureResourceView);
-	if (FAILED(hr))
-		return hr;
-	
-	hr = CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-normal.dds", nullptr, &m_normalResourceView);
-	if (FAILED(hr))
-		return hr;
-
-	hr = CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-height.dds", nullptr, &m_parallaxResourceView);
-	if (FAILED(hr))
-		return hr;
-
 	D3D11_SAMPLER_DESC sampDesc;
 	ZeroMemory(&sampDesc, sizeof(sampDesc));
 	sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
@@ -46,7 +33,7 @@ HRESULT GameObject::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context)
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = device->CreateSamplerState(&sampDesc, m_samplerLinear.GetAddressOf());
+	HRESULT hr = device->CreateSamplerState(&sampDesc, m_samplerLinear.GetAddressOf());
 	if (FAILED(hr))
 		return hr;
 
@@ -88,129 +75,61 @@ void GameObject::Render(ID3D11DeviceContext* context) {
 	context->IASetVertexBuffers(0, 1, &vertexBuf, &stride, &offset);
 	context->IASetIndexBuffer(m_mesh->GetIndexBuffer(), DXGI_FORMAT_R16_UINT, 0);
 
-	context->PSSetShaderResources(0, 1, m_textureResourceView.GetAddressOf());
-	context->PSSetShaderResources(1, 1, m_normalResourceView.GetAddressOf());
-	context->PSSetShaderResources(2, 1, m_parallaxResourceView.GetAddressOf());
 	context->PSSetSamplers(0, 1, m_samplerLinear.GetAddressOf());
 	
 	context->DrawIndexed(NUM_INDICES, 0, 0);
 }
 
 void GameObject::RenderGUIControls(ID3D11Device* device, Camera* camera) {
-	if (ImGui::CollapsingHeader("GameObject Controls")) {
-		// Transform controls
-		static ImGuizmo::OPERATION currentGizmoOperation(ImGuizmo::TRANSLATE);
-		static ImGuizmo::MODE currentGizmoMode(ImGuizmo::LOCAL);
+	// Transform controls
+	static ImGuizmo::OPERATION currentGizmoOperation(ImGuizmo::TRANSLATE);
+	static ImGuizmo::MODE currentGizmoMode(ImGuizmo::LOCAL);
 
-		ImGui::Text("Transform");
-		if (ImGui::IsKeyPressed('Q'))
-			currentGizmoOperation = ImGuizmo::TRANSLATE;
-		if (ImGui::IsKeyPressed('W'))
-			currentGizmoOperation = ImGuizmo::ROTATE;
-		if (ImGui::IsKeyPressed('E')) 
-			currentGizmoOperation = ImGuizmo::SCALE;
-		if (ImGui::IsKeyPressed('R'))
-			currentGizmoOperation = ImGuizmo::UNIVERSAL;
+	ImGui::Text("Transform");
+	if (ImGui::IsKeyPressed('Q'))
+		currentGizmoOperation = ImGuizmo::TRANSLATE;
+	if (ImGui::IsKeyPressed('W'))
+		currentGizmoOperation = ImGuizmo::ROTATE;
+	if (ImGui::IsKeyPressed('E')) 
+		currentGizmoOperation = ImGuizmo::SCALE;
+	if (ImGui::IsKeyPressed('R'))
+		currentGizmoOperation = ImGuizmo::UNIVERSAL;
 
-		if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
-			currentGizmoOperation = ImGuizmo::TRANSLATE;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
-			currentGizmoOperation = ImGuizmo::ROTATE;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
-			currentGizmoOperation = ImGuizmo::SCALE;
+	if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
+		currentGizmoOperation = ImGuizmo::TRANSLATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
+		currentGizmoOperation = ImGuizmo::ROTATE;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
+		currentGizmoOperation = ImGuizmo::SCALE;
 
-		if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
-			currentGizmoMode = ImGuizmo::LOCAL;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
-			currentGizmoMode = ImGuizmo::WORLD;
+	if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+		currentGizmoMode = ImGuizmo::LOCAL;
+	ImGui::SameLine();
+	if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+		currentGizmoMode = ImGuizmo::WORLD;
 
-		ImGui::DragFloat3("Position", &m_position.x, 0.01f);
-		ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
-		ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
+	ImGui::DragFloat3("Position", &m_position.x, 0.01f);
+	ImGui::DragFloat3("Rotation", &m_rotation.x, 0.01f);
+	ImGui::DragFloat3("Scale", &m_scale.x, 0.01f);
 
-		// Gizmo
-		DirectX::XMFLOAT4X4 view;
-		DirectX::XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&view, camera->CalculateViewMatrix());
-		XMStoreFloat4x4(&proj, camera->CalculateProjectionMatrix());
-		DirectX::XMFLOAT4X4 newWorld;
-		ImGuizmo::RecomposeMatrixFromComponents(&m_position.x, &m_rotation.x, &m_scale.x, &newWorld.m[0][0]);
-		ImGuizmo::Manipulate(&view.m[0][0], &proj.m[0][0], currentGizmoOperation, currentGizmoMode, &newWorld.m[0][0]);
-		ImGuizmo::DecomposeMatrixToComponents(&newWorld.m[0][0], &m_position.x, &m_rotation.x, &m_scale.x);
-		m_world = newWorld;
+	// Gizmo
+	DirectX::XMFLOAT4X4 view;
+	DirectX::XMFLOAT4X4 proj;
+	XMStoreFloat4x4(&view, camera->CalculateViewMatrix());
+	XMStoreFloat4x4(&proj, camera->CalculateProjectionMatrix());
+	DirectX::XMFLOAT4X4 newWorld;
+	ImGuizmo::RecomposeMatrixFromComponents(&m_position.x, &m_rotation.x, &m_scale.x, &newWorld.m[0][0]);
+	ImGuizmo::Manipulate(&view.m[0][0], &proj.m[0][0], currentGizmoOperation, currentGizmoMode, &newWorld.m[0][0]);
+	ImGuizmo::DecomposeMatrixToComponents(&newWorld.m[0][0], &m_position.x, &m_rotation.x, &m_scale.x);
+	m_world = newWorld;
 
-		// Material controls
-		ImGui::Text("Material");
-		ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
-		ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
-		ImGui::DragFloat3("Diffuse", &m_material.Material.Diffuse.x, 0.001f);
-		ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);
-		ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
-
-		// Texture selection
-		ImGui::Columns(2, 0, false);
-		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
-		if (ImGui::ImageButton(m_textureResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
-			ImGuiFileDialog::Instance()->Close();
-			ImGuiFileDialog::Instance()->OpenDialog("ChooseDiffuseTex", "Choose Diffuse Texture", ".dds", ".");
-		}
-		ImGui::NextColumn();
-		ImGui::Checkbox("Diffuse Texture", (bool*)&m_material.Material.UseTexture);
-		ImGui::Columns();
-
-		ImGui::Columns(2, 0, false);
-		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
-		if (ImGui::ImageButton(m_normalResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
-			ImGuiFileDialog::Instance()->Close();
-			ImGuiFileDialog::Instance()->OpenDialog("ChooseNormalTex", "Choose Normal Texture", ".dds", ".");
-		}
-		ImGui::NextColumn();
-		ImGui::Checkbox("Normal Texture", (bool*)&m_material.Material.UseNormal);
-		ImGui::Columns();
-
-		ImGui::Columns(2, 0, false);
-		ImGui::SetColumnWidth(ImGui::GetColumnIndex(), ImGui::GetWindowWidth() / 3);
-		if (ImGui::ImageButton(m_parallaxResourceView.Get(), ImVec2(ImGui::GetWindowWidth() / 4, ImGui::GetWindowWidth() / 4))) {
-			ImGuiFileDialog::Instance()->Close();
-			ImGuiFileDialog::Instance()->OpenDialog("ChooseHeightTex", "Choose Height Texture", ".dds", ".");
-		}
-		ImGui::NextColumn();
-		ImGui::Checkbox("Parallax Texture", (bool*)&m_material.Material.UseParallax);
-		ImGui::DragFloat("Strength", &m_material.Material.ParallaxStrength, 0.001f, 0.0f, 1.0f);
-		ImGui::Columns();
-		
-		if (ImGuiFileDialog::Instance()->Display("ChooseDiffuseTex")) {
-			if (ImGuiFileDialog::Instance()->IsOk()) {
-				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
-				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
-				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_textureResourceView.ReleaseAndGetAddressOf());
-				if (FAILED(hr))
-					throw 0;
-			}
-			ImGuiFileDialog::Instance()->Close();
-		}
-		if (ImGuiFileDialog::Instance()->Display("ChooseNormalTex")) {
-			if (ImGuiFileDialog::Instance()->IsOk()) {
-				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
-				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
-				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_normalResourceView.ReleaseAndGetAddressOf());
-				if (FAILED(hr))
-					throw 0;
-			}
-			ImGuiFileDialog::Instance()->Close();
-		}
-		if (ImGuiFileDialog::Instance()->Display("ChooseHeightTex")) {
-			if (ImGuiFileDialog::Instance()->IsOk()) {
-				std::string filePath = ImGuiFileDialog::Instance()->GetFilePathName();
-				std::wstring wFilePath = std::wstring(filePath.begin(), filePath.end());
-				HRESULT hr = CreateDDSTextureFromFile(device, wFilePath.c_str(), nullptr, m_parallaxResourceView.ReleaseAndGetAddressOf());
-				if (FAILED(hr))
-					throw 0;
-			}
-			ImGuiFileDialog::Instance()->Close();
-		}
-	}
+	// Material controls
+	ImGui::Text("Material");
+	ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
+	ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
+	ImGui::DragFloat3("Diffuse", &m_material.Material.Diffuse.x, 0.001f);
+	ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);
+	ImGui::DragFloat("SpecularPow", &m_material.Material.SpecularPower, 0.1f);
 }

@@ -78,6 +78,7 @@
     <ClInclude Include="External\imgui\ImGuizmo\ImZoomSlider.h">
       <Filter>External\imgui\ImGuizmo</Filter>
     </ClInclude>
+    <ClInclude Include="GameObject_Cube.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -126,6 +127,7 @@
     <ClCompile Include="External\imgui\ImGuizmo\ImSequencer.cpp">
       <Filter>External\imgui\ImGuizmo</Filter>
     </ClCompile>
+    <ClCompile Include="GameObject_Cube.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
