@@ -1,7 +1,9 @@
-RWTexture2D<float4> gOutput : register(u0);
+Texture2D render : register(t0);
+Texture2D renderHDR : register(t1);
+RWTexture2D<float4> output : register(u0);
 
 [numthreads(8, 8, 1)]
 void CS( uint3 DTid : SV_DispatchThreadID )
 {
-    gOutput[DTid.xy] = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    output[DTid.xy] = render[DTid.xy] * (DTid.x / 500.0f);
 }

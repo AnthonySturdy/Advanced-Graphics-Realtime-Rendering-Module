@@ -67,6 +67,9 @@ void Game::Render()
         return;
     }
 
+    ID3D11UnorderedAccessView* nullUav = nullptr;
+    ID3D11RenderTargetView* nullRtv = nullptr;
+
     // Bind render target to intermediate RenderTargetView
     ID3D11RenderTargetView** rtvs[2];
     rtvs[0] = m_rttRenderTargetViews.GetAddressOf();
@@ -111,20 +114,30 @@ void Game::Render()
     ID3D11Buffer* materialCB = m_gameObject->GetMaterialConstantBuffer();
     m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
 
-    shader = nullptr;
-
     m_gameObject->Render(m_d3dContext.Get());
 
+    ID3D11RenderTargetView* nullRTV[2] = { nullptr, nullptr };  // Unbind render targets for use in next pass
+	m_d3dContext->OMSetRenderTargets(1, &nullRTV[0], nullptr);
 
     //
     // Post processing pass
     //
-    ID3D11UnorderedAccessView* NullUav = nullptr;
+    ComPtr<ID3D11Resource> geometryPassResource;
+    m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
+    ComPtr<ID3D11ShaderResourceView> geometryPassSrv;
+    m_d3dDevice->CreateShaderResourceView(geometryPassResource.Get(), nullptr, geometryPassSrv.ReleaseAndGetAddressOf());
 
+    ComPtr<ID3D11Resource> geometryPassHDRResource;
+    m_rttRenderTargetViewsHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
+    ComPtr<ID3D11ShaderResourceView> geometryPassHDRSrv;
+    m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
+
+    m_d3dContext->CSSetShaderResources(0, 1, geometryPassSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(1, 1, geometryPassHDRSrv.GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
     m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0);
-    m_d3dContext->Dispatch(m_viewportSize.x / 8, m_viewportSize.y / 8, 1);
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &NullUav, nullptr);   // Unbind UAV after Dispatch
+    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);   // Unbind UAV after Dispatch
 
 
     //
@@ -148,11 +161,11 @@ void Game::Render()
         }
         
         // Create SRV and render to ImGui window
-        ComPtr<ID3D11Resource> resource;
-        m_postProcUnorderedAccessView->GetResource(resource.ReleaseAndGetAddressOf());
-        ComPtr<ID3D11ShaderResourceView> srv;
-        m_d3dDevice->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
-        ImGui::Image(srv.Get(), m_viewportSize);
+        ComPtr<ID3D11Resource> renderResource;
+        m_postProcUnorderedAccessView->GetResource(renderResource.ReleaseAndGetAddressOf());
+        ComPtr<ID3D11ShaderResourceView> renderSrv;
+        m_d3dDevice->CreateShaderResourceView(renderResource.Get(), nullptr, renderSrv.ReleaseAndGetAddressOf());
+        ImGui::Image(renderSrv.Get(), m_viewportSize);
 
         // Set up ImGuizmo
         ImGuizmo::SetDrawlist();
@@ -476,8 +489,8 @@ void Game::CreateResources()
     // Create post processing Unordered Access Resource (UAV)
     Microsoft::WRL::ComPtr<ID3D11Texture2D> postProcUAVTex;
     D3D11_TEXTURE2D_DESC postProcTexDesc = {};
-    postProcTexDesc.Width = std::max(m_viewportSize.x, 1.0f);
-    postProcTexDesc.Height = std::max(m_viewportSize.y, 1.0f);
+    postProcTexDesc.Width = backBufferWidth; //= std::max(m_viewportSize.x, 1.0f);
+    postProcTexDesc.Height = backBufferHeight; //std::max(m_viewportSize.y, 1.0f);
     postProcTexDesc.MipLevels = 1;
     postProcTexDesc.ArraySize = 1;
     postProcTexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
