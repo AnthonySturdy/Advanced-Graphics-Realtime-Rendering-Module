@@ -118,8 +118,8 @@ void Game::Render()
     //
     // Post processing pass
     //
-
-
+    m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0);
+    m_d3dContext->Dispatch(1, 1, 1);
 
     //
 	// Gui render pass to back buffer
@@ -604,6 +604,8 @@ void Game::CreateGameObjects() {
     };
     UINT numElements = ARRAYSIZE(layout);
     m_gameObject->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
+
+    m_BloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
 }
 
 void Game::OnDeviceLost()

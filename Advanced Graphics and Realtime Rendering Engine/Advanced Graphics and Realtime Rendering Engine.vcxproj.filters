@@ -79,6 +79,7 @@
       <Filter>External\imgui\ImGuizmo</Filter>
     </ClInclude>
     <ClInclude Include="GameObject_Cube.h" />
+    <ClInclude Include="ComputeShader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -128,6 +129,7 @@
       <Filter>External\imgui\ImGuizmo</Filter>
     </ClCompile>
     <ClCompile Include="GameObject_Cube.cpp" />
+    <ClCompile Include="ComputeShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />
@@ -147,6 +149,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="BloomShader.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

@@ -13,7 +13,7 @@ Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, co
         // Attempt to compile at runtime if precompiled shader fails
         std::wstring vertShaderHlsl(vertexShaderPathWithoutExt); vertShaderHlsl += L".hlsl";
         if (FAILED(CompileShaderFromFile(vertShaderHlsl.c_str(), "VS", "vs_5_0", &vsBlob))) {
-            MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
+            MessageBox(nullptr, L"The HLSL file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
             return;
         }
     }
@@ -30,7 +30,7 @@ Shader::Shader(ID3D11Device* device, const WCHAR* vertexShaderPathWithoutExt, co
         // Attempt to compile at runtime if precompiled shader fails
         std::wstring pixelShaderHlsl(pixelShaderPathWithoutExt); pixelShaderHlsl += L".hlsl";
         if (FAILED(CompileShaderFromFile(pixelShaderHlsl.c_str(), "PS", "ps_5_0", &psBlob))) {
-            MessageBox(nullptr, L"The FX file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
+            MessageBox(nullptr, L"The HLSL file cannot be compiled. Ensure this executable is relative to the specified file path.", L"Error", MB_OK);
             return;
         }
     }

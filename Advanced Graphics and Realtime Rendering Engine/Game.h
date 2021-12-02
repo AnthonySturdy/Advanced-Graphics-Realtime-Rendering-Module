@@ -6,6 +6,7 @@
 #include "GameObject.h"
 #include "GameObject_Cube.h"
 #include "Camera.h"
+#include "ComputeShader.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -87,4 +88,5 @@ private:
     std::shared_ptr<GameObject> m_gameObject;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
+    std::shared_ptr<ComputeShader> m_BloomComputeShader;
 };
