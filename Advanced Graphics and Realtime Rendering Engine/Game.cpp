@@ -115,11 +115,17 @@ void Game::Render()
 
     m_gameObject->Render(m_d3dContext.Get());
 
+
     //
     // Post processing pass
     //
+    ID3D11UnorderedAccessView* NullUav = nullptr;
+
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
     m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0);
-    m_d3dContext->Dispatch(1, 1, 1);
+    m_d3dContext->Dispatch(m_viewportSize.x / 8, m_viewportSize.y / 8, 1);
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &NullUav, nullptr);   // Unbind UAV after Dispatch
+
 
     //
 	// Gui render pass to back buffer
@@ -143,7 +149,7 @@ void Game::Render()
         
         // Create SRV and render to ImGui window
         ComPtr<ID3D11Resource> resource;
-        m_rttRenderTargetViews->GetResource(resource.ReleaseAndGetAddressOf());
+        m_postProcUnorderedAccessView->GetResource(resource.ReleaseAndGetAddressOf());
         ComPtr<ID3D11ShaderResourceView> srv;
         m_d3dDevice->CreateShaderResourceView(resource.Get(), nullptr, srv.GetAddressOf());
         ImGui::Image(srv.Get(), m_viewportSize);
@@ -466,9 +472,30 @@ void Game::CreateResources()
     ComPtr<ID3D11Texture2D> rttDepthStencil;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, rttDepthStencil.GetAddressOf()));
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilViews.ReleaseAndGetAddressOf()));
-    
 
-    // TODO: Initialize windows-size dependent objects here.
+    // Create post processing Unordered Access Resource (UAV)
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> postProcUAVTex;
+    D3D11_TEXTURE2D_DESC postProcTexDesc = {};
+    postProcTexDesc.Width = std::max(m_viewportSize.x, 1.0f);
+    postProcTexDesc.Height = std::max(m_viewportSize.y, 1.0f);
+    postProcTexDesc.MipLevels = 1;
+    postProcTexDesc.ArraySize = 1;
+    postProcTexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    postProcTexDesc.SampleDesc.Count = 1;
+    postProcTexDesc.SampleDesc.Quality = 0;
+    postProcTexDesc.Usage = D3D11_USAGE_DEFAULT;
+    postProcTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+    postProcTexDesc.CPUAccessFlags = 0;
+    postProcTexDesc.MiscFlags = 0;
+
+    D3D11_UNORDERED_ACCESS_VIEW_DESC postProcUAVDesc;
+    postProcUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+    postProcUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
+    postProcUAVDesc.Texture2D.MipSlice = 0;
+
+    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&postProcTexDesc, nullptr, postProcUAVTex.GetAddressOf()));
+    DX::ThrowIfFailed(m_d3dDevice->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_postProcUnorderedAccessView.ReleaseAndGetAddressOf()));
+
 }
 
 void Game::InitialiseImGui(HWND hwnd)

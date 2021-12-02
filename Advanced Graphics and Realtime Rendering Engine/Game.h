@@ -60,22 +60,23 @@ private:
     void OnDeviceLost();
 
     // Device resources.
-    HWND                                            m_window;
-    int                                             m_outputWidth;
-    int                                             m_outputHeight;
+    HWND                                                m_window;
+    int                                                 m_outputWidth;
+    int                                                 m_outputHeight;
 
-    D3D_FEATURE_LEVEL                               m_featureLevel;
-    Microsoft::WRL::ComPtr<ID3D11Device1>           m_d3dDevice;
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext1>    m_d3dContext;
+    D3D_FEATURE_LEVEL                                   m_featureLevel;
+    Microsoft::WRL::ComPtr<ID3D11Device1>               m_d3dDevice;
+    Microsoft::WRL::ComPtr<ID3D11DeviceContext1>        m_d3dContext;
 
-    Microsoft::WRL::ComPtr<IDXGISwapChain1>         m_swapChain;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_renderTargetView;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_depthStencilView;
+    Microsoft::WRL::ComPtr<IDXGISwapChain1>             m_swapChain;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_renderTargetView;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_depthStencilView;
 
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetViews;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_rttRenderTargetViewsHDR;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>  m_rttDepthStencilViews;
-    ImVec2                                          m_viewportSize;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_rttRenderTargetViews;         // Geometry render
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_rttRenderTargetViewsHDR;      // HDR extracted during geometry render
+    Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>   m_postProcUnorderedAccessView;  // Post processing passes read/write, final image rendered to viewport
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_rttDepthStencilViews;
+    ImVec2                                              m_viewportSize;
 
     // Rendering loop timer.
     DX::StepTimer                                   m_timer;
