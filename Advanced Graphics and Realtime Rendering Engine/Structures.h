@@ -106,3 +106,9 @@ struct LightPropertiesConstantBuffer {
 	//----------------------------------- (16 byte boundary)
 	Light               Lights[MAX_LIGHTS]; // 80 * 8 bytes
 };  // Total:                                  672 bytes (42 * 16)
+
+struct GaussianBlurConstantBuffer {
+	BOOL firstPass;
+	int offset;
+	int resolution[2];
+};

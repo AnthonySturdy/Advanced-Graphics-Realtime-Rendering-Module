@@ -68,13 +68,15 @@ void Game::Render()
     }
 
     ID3D11UnorderedAccessView* nullUav = nullptr;
-    ID3D11RenderTargetView* nullRtv = nullptr;
 
     // Bind render target to intermediate RenderTargetView
     ID3D11RenderTargetView** rtvs[2];
     rtvs[0] = m_rttRenderTargetViews.GetAddressOf();
     rtvs[1] = m_rttRenderTargetViewsHDR.GetAddressOf();
-    SetRenderTargetAndClear(rtvs[0], m_rttDepthStencilViews.Get(), 2);
+
+    XMFLOAT4 tpClear = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);                
+    m_d3dContext->ClearRenderTargetView(*rtvs[1], &tpClear.x);  // Clear HDR RTV with transparent
+    SetRenderTargetAndClear(rtvs[0], m_rttDepthStencilViews.Get(), 2);  // Clear main RTV and set render target
 
     // Start the Dear ImGui frame
     ImGui_ImplDX11_NewFrame();
@@ -85,7 +87,6 @@ void Game::Render()
     //
     // Geometry render pass
     //
-
     // get the game object world transform
     XMMATRIX mGO = XMLoadFloat4x4(m_gameObject->GetTransform());
 
@@ -122,6 +123,7 @@ void Game::Render()
     //
     // Post processing pass
     //
+    // Convert RTV to SRV for passing into shader
     ComPtr<ID3D11Resource> geometryPassResource;
     m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
     ComPtr<ID3D11ShaderResourceView> geometryPassSrv;
@@ -132,18 +134,33 @@ void Game::Render()
     ComPtr<ID3D11ShaderResourceView> geometryPassHDRSrv;
     m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
 
+    // Update GPU with Gaussian blur cbuffer
+    static GaussianBlurConstantBuffer gbcb = {};
+    gbcb.resolution[0] = m_outputWidth; gbcb.resolution[1] = m_outputHeight;
+    gbcb.firstPass = true;
+    m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
+    m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
+
+    // Pass textures to compute shader
     m_d3dContext->CSSetShaderResources(0, 1, geometryPassSrv.GetAddressOf());
     m_d3dContext->CSSetShaderResources(1, 1, geometryPassHDRSrv.GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
-    m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0);
-    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
+
+    // Dispatch horizontal blur pass
+    m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0); 
+    m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
+
+    // Update cbuffer, Dispatch vertical blur pass
+    gbcb.firstPass = false;
+    m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
+    m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
+
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);   // Unbind UAV after Dispatch
 
 
     //
 	// Gui render pass to back buffer
 	//
-
     // Bind render target to back buffer
     SetRenderTargetAndClear(m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 
@@ -181,6 +198,12 @@ void Game::Render()
     ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
         m_camera->RenderGUIControls();
         m_gameObject->RenderGUIControls(m_d3dDevice.Get(), m_camera.get());
+    ImGui::End();
+
+    ImGui::Begin("Post Processing Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
+		if(ImGui::CollapsingHeader("Guassian Blur")) {
+            ImGui::DragInt("Offset", &gbcb.offset);
+		}
     ImGui::End();
 
     // Render ImGui
@@ -617,6 +640,14 @@ void Game::CreateConstantBuffers() {
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_lightConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return;
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(GaussianBlurConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_gaussianBlurConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
 }

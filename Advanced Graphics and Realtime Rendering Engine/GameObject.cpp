@@ -127,7 +127,7 @@ void GameObject::RenderGUIControls(ID3D11Device* device, Camera* camera) {
 
 	// Material controls
 	ImGui::Text("Material");
-	ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.001f);
+	ImGui::DragFloat3("Emissive", &m_material.Material.Emissive.x, 0.01f);
 	ImGui::DragFloat3("Ambient", &m_material.Material.Ambient.x, 0.001f);
 	ImGui::DragFloat3("Diffuse", &m_material.Material.Diffuse.x, 0.001f);
 	ImGui::DragFloat3("Specular", &m_material.Material.Specular.x, 0.001f);

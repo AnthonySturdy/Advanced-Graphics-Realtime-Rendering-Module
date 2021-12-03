@@ -90,4 +90,5 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
     std::shared_ptr<ComputeShader> m_BloomComputeShader;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_gaussianBlurConstantBuffer;
 };
