@@ -274,11 +274,7 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 
     PS_OUTPUT output = (PS_OUTPUT) 0;
     output.colour = finalColor;
-    float brightness = dot(finalColor.rgb, float3(0.2126, 0.7152, 0.0722));
-    if (brightness > 1.0)
-        output.HDR = float4(finalColor.rgb, 1.0);
-    else
-        output.HDR = float4(0.0, 0.0, 0.0, 0.0);
+    output.HDR = float4(emissive.rgb, 1.0f);
 
     return output;
 }

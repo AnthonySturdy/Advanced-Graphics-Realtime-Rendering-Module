@@ -135,9 +135,7 @@ void Game::Render()
     m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
 
     // Update GPU with Gaussian blur cbuffer
-    static GaussianBlurConstantBuffer gbcb = {};
-    gbcb.resolution[0] = m_outputWidth; gbcb.resolution[1] = m_outputHeight;
-    gbcb.firstPass = true;
+    static GaussianBlurConstantBuffer gbcb = { 10.0, 5.0, 16.0, 0.0f };
     m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
 
@@ -150,12 +148,8 @@ void Game::Render()
     m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0); 
     m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
 
-    // Update cbuffer, Dispatch vertical blur pass
-    gbcb.firstPass = false;
-    m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
-    m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
-
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);   // Unbind UAV after Dispatch
+    // Unbind UAV after Dispatch
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);   
 
 
     //
@@ -202,7 +196,9 @@ void Game::Render()
 
     ImGui::Begin("Post Processing Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
 		if(ImGui::CollapsingHeader("Guassian Blur")) {
-            ImGui::DragInt("Offset", &gbcb.offset);
+            ImGui::DragFloat("Size", &gbcb.size, 0.1f, 0.0f, 50.0f);
+            ImGui::DragFloat("Quality", &gbcb.quality, 0.1f, 0.0f, 50.0f);
+            ImGui::DragFloat("Directions", &gbcb.directions, 0.1f, 0.0f, 50.0f);
 		}
     ImGui::End();
 

@@ -3,9 +3,11 @@ Texture2D renderHDR : register(t1);
 RWTexture2D<float4> output : register(u0);
 
 cbuffer Parameters : register(b0){
-    bool firstPass;
-    int strength;
-    int2 resolution;
+    float size;         // BLUR SIZE (Radius)
+    float quality;      // BLUR QUALITY (Default 4.0 - More is better but slower)
+    float directions;   // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+
+    float _padding;
 }
 
 [numthreads(4, 4, 1)]
@@ -13,47 +15,27 @@ void CS( uint3 DTid : SV_DispatchThreadID )
 {
 	/***********************************************
 	MARKING SCHEME: Bloom
-	DESCRIPTION:	Guassian blur applied to the extracted bright areas of the render (via separate 
-					HDR texture) and re-apply over regular render.
+	DESCRIPTION:	Guassian blur applied to the extracted emissive areas of the render (via separate 
+					HDR texture) and re-apply result over regular render.
 	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Bloom
+					https://www.shadertoy.com/view/Xltfzj
 	***********************************************/
-    const float weight[5] = { 0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216 };
-    float4 result = renderHDR[DTid.xy];
 
-    if (firstPass)
+    const float PI2 = 6.28318530718; // Pi*2
+    
+    // Pixel colour
+    float4 bloomCol = renderHDR[DTid.xy];
+    
+    // Blur calculations
+    for (float d = 0.0; d < PI2; d += PI2 / directions)
     {
-        for (int i = 1; i < strength; ++i)
+        for (float i = 1.0 / quality; i <= 1.0; i += 1.0 / quality)
         {
-            int2 uv1 = DTid.xy + int2(0, i);
-            if(uv1.x >= resolution.x || uv1.y >= resolution.y)
-                uv1 = resolution - int2(1, 1);
-            result += renderHDR[uv1] * lerp(0.227027, 0.016216, (float) i / strength);
-
-            int2 uv2 = DTid.xy - int2(0, i);
-            if (uv2.x < 0 || uv2.y < 0)
-                uv2 = int2(0, 0);
-            result += renderHDR[uv2] * lerp(0.227027, 0.016216, (float)i / strength);
+            bloomCol += renderHDR[DTid.xy + float2(cos(d), sin(d)) * size * i];
         }
-
-        output[DTid.xy] = result / 2;
     }
-    else
-    {
-        result = output[DTid.xy];
-        for (int i = 1; i < strength; ++i)
-        {
-            int2 uv1 = DTid.xy + int2(i, 0);
-            if (uv1.x >= resolution.x || uv1.y >= resolution.y)
-                uv1 = resolution - int2(1, 1);
-            result += output[uv1] * lerp(0.227027, 0.016216, (float)i / strength);
-
-            int2 uv2 = DTid.xy - int2(i, 0);
-            if (uv2.x < 0 || uv2.y < 0)
-                uv2 = int2(0, 0);
-            result += output[uv2] * lerp(0.227027, 0.016216, (float)i / strength);
-        }
-
-        output[DTid.xy] = render[DTid.xy] + output[DTid.xy] + (result / 2);
-    }
-
+    
+    // Output to screen
+    bloomCol /= quality * directions - 15.0;
+    output[DTid.xy] = render[DTid.xy] + bloomCol;
 }

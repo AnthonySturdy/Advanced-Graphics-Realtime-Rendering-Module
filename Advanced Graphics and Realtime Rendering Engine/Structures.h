@@ -108,7 +108,9 @@ struct LightPropertiesConstantBuffer {
 };  // Total:                                  672 bytes (42 * 16)
 
 struct GaussianBlurConstantBuffer {
-	BOOL firstPass;
-	int offset;
-	int resolution[2];
+	float size;
+	float quality;
+	float directions;
+
+	float _padding;
 };
