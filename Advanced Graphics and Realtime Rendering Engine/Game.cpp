@@ -135,7 +135,7 @@ void Game::Render()
     m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
 
     // Update GPU with Gaussian blur cbuffer
-    static GaussianBlurConstantBuffer gbcb = { 10.0, 5.0, 16.0, 0.0f };
+    static GaussianBlurConstantBuffer gbcb = { 15.0, 9.0, 35.0, 0.0f };
     m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
 
