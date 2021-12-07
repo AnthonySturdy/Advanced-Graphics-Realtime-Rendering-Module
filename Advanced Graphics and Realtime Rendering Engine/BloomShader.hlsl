@@ -10,11 +10,11 @@ cbuffer Parameters : register(b0){
     float _padding;
 }
 
-[numthreads(4, 4, 1)]
+[numthreads(8, 8, 1)]
 void CS( uint3 DTid : SV_DispatchThreadID )
 {
 	/***********************************************
-	MARKING SCHEME: Bloom
+	MARKING SCHEME: Bloom (Screen Space Effect) and HDR
 	DESCRIPTION:	Guassian blur applied to the extracted emissive areas of the render (via separate 
 					HDR texture) and re-apply result over regular render.
 	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Bloom

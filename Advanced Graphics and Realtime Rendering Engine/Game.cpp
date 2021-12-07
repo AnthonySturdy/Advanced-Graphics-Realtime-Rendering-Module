@@ -68,6 +68,7 @@ void Game::Render()
     }
 
     ID3D11UnorderedAccessView* nullUav = nullptr;
+    ID3D11ShaderResourceView* nullSrv = nullptr;
 
     // Bind render target to intermediate RenderTargetView
     ID3D11RenderTargetView** rtvs[2];
@@ -121,7 +122,7 @@ void Game::Render()
 	m_d3dContext->OMSetRenderTargets(1, &nullRTV[0], nullptr);
 
     //
-    // Post processing pass
+    // Bloom pass
     //
     // Convert RTV to SRV for passing into shader
     ComPtr<ID3D11Resource> geometryPassResource;
@@ -135,7 +136,7 @@ void Game::Render()
     m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
 
     // Update GPU with Gaussian blur cbuffer
-    static GaussianBlurConstantBuffer gbcb = { 15.0, 9.0, 35.0, 0.0f };
+    static GaussianBlurConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
     m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
 
@@ -145,12 +146,38 @@ void Game::Render()
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
 
     // Dispatch horizontal blur pass
-    m_d3dContext->CSSetShader(m_BloomComputeShader->GetComputeShader(), nullptr, 0); 
+    m_d3dContext->CSSetShader(m_bloomComputeShader->GetComputeShader(), nullptr, 0); 
     m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
 
-    // Unbind UAV after Dispatch
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);   
+    // Unbind textures after Dispatch
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
+    m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
+    m_d3dContext->CSSetShaderResources(1, 1, &nullSrv);
 
+    //
+    // Image filter pass
+    //
+    static ImageFilterConstantBuffer ifcb = { 0, 0.0f, 0.0f, 0.0f, m_viewportSize.x, m_viewportSize.y, 0.0f, 0.0f };
+    if(ifcb.filterIntensity > 0) {
+        ifcb.time = m_timer.GetTotalSeconds();
+        ifcb.resolution[0] = m_outputWidth;
+        ifcb.resolution[1] = m_outputHeight;
+
+        m_d3dContext->UpdateSubresource(m_imageFilterConstantBuffer.Get(), 0, nullptr, &ifcb, 0, 0);
+        m_d3dContext->CSSetConstantBuffers(0, 1, m_imageFilterConstantBuffer.GetAddressOf());
+
+        // Pass textures to compute shader
+        m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
+
+        // Dispatch horizontal blur pass
+        m_d3dContext->CSSetShader(m_imageFilterComputeShader->GetComputeShader(), nullptr, 0);
+        m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
+
+        // Unbind textures after Dispatch
+        m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
+        m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
+        m_d3dContext->CSSetShaderResources(1, 1, &nullSrv);
+    }
 
     //
 	// Gui render pass to back buffer
@@ -200,6 +227,15 @@ void Game::Render()
             ImGui::DragFloat("Quality", &gbcb.quality, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Directions", &gbcb.directions, 0.1f, 0.0f, 50.0f);
 		}
+
+        if (ImGui::CollapsingHeader("Image Filters")) {
+            const char* items[] = { "Invert", "Greyscale", "Film Grain", "Vignette" };
+            static int selection = ifcb.filterType;
+            ImGui::Combo("Filter Type", &selection, items, 4);
+            ifcb.filterType = selection;
+
+            ImGui::DragFloat("Intensity", &ifcb.filterIntensity, 0.01f, 0.0f, 1.0f);
+        }
     ImGui::End();
 
     // Render ImGui
@@ -646,6 +682,14 @@ void Game::CreateConstantBuffers() {
     hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_gaussianBlurConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(ImageFilterConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_imageFilterConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return;
 }
 
 void Game::CreateCameras(int width, int height) {
@@ -672,7 +716,8 @@ void Game::CreateGameObjects() {
     UINT numElements = ARRAYSIZE(layout);
     m_gameObject->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
 
-    m_BloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
+    m_bloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
+    m_imageFilterComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"ImageFilterShader");
 }
 
 void Game::OnDeviceLost()

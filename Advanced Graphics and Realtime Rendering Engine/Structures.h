@@ -114,3 +114,13 @@ struct GaussianBlurConstantBuffer {
 
 	float _padding;
 };
+
+struct ImageFilterConstantBuffer {
+	int filterType;
+	float filterIntensity;
+	float time;
+	float _padding;
+	// 16 bytes
+	float resolution[2];
+	float __padding[2];
+};

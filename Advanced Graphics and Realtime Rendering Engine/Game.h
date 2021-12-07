@@ -79,7 +79,7 @@ private:
     ImVec2                                              m_viewportSize;
 
     // Rendering loop timer.
-    DX::StepTimer                                   m_timer;
+    DX::StepTimer                                       m_timer;
 
     // ImGui
     ImGuiIO* m_ioImGui = nullptr;
@@ -89,6 +89,10 @@ private:
     std::shared_ptr<GameObject> m_gameObject;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
-    std::shared_ptr<ComputeShader> m_BloomComputeShader;
+
+    std::shared_ptr<ComputeShader> m_bloomComputeShader;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_gaussianBlurConstantBuffer;
+
+    std::shared_ptr<ComputeShader> m_imageFilterComputeShader;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_imageFilterConstantBuffer;
 };
