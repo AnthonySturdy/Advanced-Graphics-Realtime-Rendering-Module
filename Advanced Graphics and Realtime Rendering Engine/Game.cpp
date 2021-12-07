@@ -85,6 +85,12 @@ void Game::Render()
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
 
+    /***********************************************
+    MARKING SCHEME: Special Effects Pipeline
+    DESCRIPTION:	Render to texture, Post processing effects applied, Render texture to
+					quad via ImGui image.
+    ***********************************************/
+
     //
     // Geometry render pass
     //
@@ -147,7 +153,7 @@ void Game::Render()
 
     // Dispatch horizontal blur pass
     m_d3dContext->CSSetShader(m_bloomComputeShader->GetComputeShader(), nullptr, 0); 
-    m_d3dContext->Dispatch(m_outputWidth / 4, m_outputHeight / 4, 1);
+    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
 
     // Unbind textures after Dispatch
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
