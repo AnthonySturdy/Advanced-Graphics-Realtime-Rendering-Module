@@ -108,27 +108,27 @@ struct LightingResult {
 	float4 Specular;
 };
 
-LightingResult DoPointLight(Light light, float3 vertexToEye, float4 vertexPos, float3 N) {
+LightingResult DoPointLight(Light light, float3 worldToEye, float4 worldPos, float3 N) {
 	LightingResult result;
 
-	float3 LightDirectionToVertex = (vertexPos - light.Position).xyz;
-	float distance = length(LightDirectionToVertex);
-	LightDirectionToVertex = LightDirectionToVertex / distance;
+	float3 lightDirectionToWorld = (worldPos - light.Position).xyz;
+	float distance = length(lightDirectionToWorld);
+	lightDirectionToWorld = lightDirectionToWorld / distance;
 
-	float3 vertexToLight = (light.Position - vertexPos).xyz;
-	distance = length(vertexToLight);
-	vertexToLight = vertexToLight / distance;
+	float3 worldToLight = (light.Position - worldPos).xyz;
+	distance = length(worldToLight);
+	worldToLight = worldToLight / distance;
 
 	float attenuation = DoAttenuation(light, distance);
 
-	result.Diffuse = DoDiffuse(light, vertexToLight, N) * attenuation;
-	result.Specular = DoSpecular(light, vertexToEye, LightDirectionToVertex, N) * attenuation;
+	result.Diffuse = DoDiffuse(light, worldToLight, N) * attenuation;
+	result.Specular = DoSpecular(light, worldToEye, lightDirectionToWorld, N) * attenuation;
 
 	return result;
 }
 
-LightingResult ComputeLighting(float4 vertexPos, float3 N) {
-	float3 vertexToEye = normalize(EyePosition - vertexPos).xyz;
+LightingResult ComputeLighting(float4 worldPos, float3 N) {
+	float3 worldToEye = normalize(EyePosition - worldPos).xyz;
 
 	LightingResult totalResult = { { 0, 0, 0, 0 },{ 0, 0, 0, 0 } };
 
@@ -139,7 +139,7 @@ LightingResult ComputeLighting(float4 vertexPos, float3 N) {
 		if (!Lights[i].Enabled)
 			continue;
 
-		result = DoPointLight(Lights[i], vertexToEye, vertexPos, N);
+		result = DoPointLight(Lights[i], worldToEye, worldPos, N);
 
 		totalResult.Diffuse += result.Diffuse;
 		totalResult.Specular += result.Specular;

@@ -6,7 +6,7 @@
 
 class GameObject {
 public:
-	GameObject();
+	GameObject(DirectX::XMFLOAT3 initPos, DirectX::XMFLOAT3 initRot, DirectX::XMFLOAT3 initScale);
 	~GameObject();
 
 	virtual HRESULT InitMesh(ID3D11Device* device, ID3D11DeviceContext* context);
