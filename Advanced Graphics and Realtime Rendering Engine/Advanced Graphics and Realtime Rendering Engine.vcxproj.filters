@@ -80,6 +80,7 @@
     </ClInclude>
     <ClInclude Include="GameObject_Cube.h" />
     <ClInclude Include="ComputeShader.h" />
+    <ClInclude Include="GameObject_Quad.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -130,6 +131,7 @@
     </ClCompile>
     <ClCompile Include="GameObject_Cube.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
+    <ClCompile Include="GameObject_Quad.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

@@ -5,6 +5,7 @@
 
 #include "GameObject.h"
 #include "GameObject_Cube.h"
+#include "GameObject_Quad.h"
 #include "Camera.h"
 #include "ComputeShader.h"
 
@@ -86,7 +87,7 @@ private:
 
     // Scene
     std::shared_ptr<Camera> m_camera;
-    std::shared_ptr<GameObject> m_gameObject;
+    std::vector<std::shared_ptr<GameObject>> m_gameObjects;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
 

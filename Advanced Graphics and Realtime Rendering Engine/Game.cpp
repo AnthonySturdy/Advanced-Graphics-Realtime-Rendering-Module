@@ -55,7 +55,8 @@ void Game::Update(DX::StepTimer const& timer)
     float elapsedTime = float(timer.GetElapsedSeconds());
 
     // TODO: Add your game logic here.
-    m_gameObject->Update(elapsedTime, m_d3dContext.Get());
+    for (std::shared_ptr<GameObject> gameObject : m_gameObjects)
+        gameObject->Update(elapsedTime, m_d3dContext.Get());
 }
 
 // Draws the scene.
@@ -94,38 +95,40 @@ void Game::Render()
     //
     // Geometry render pass
     //
-    // get the game object world transform
-    XMMATRIX mGO = XMLoadFloat4x4(m_gameObject->GetTransform());
+    for (std::shared_ptr<GameObject> gameObject : m_gameObjects) {
+        // get the game object world transform
+        XMMATRIX mGO = XMLoadFloat4x4(gameObject->GetTransform());
 
-    // Get the game object's shader
-    Shader* shader = m_gameObject->GetShader().get();
+        // Get the game object's shader
+        Shader* shader = gameObject->GetShader().get();
 
-    // Set active vertex layout
-    m_d3dContext->IASetInputLayout(shader->GetVertexLayout().Get());
+        // Set active vertex layout
+        m_d3dContext->IASetInputLayout(shader->GetVertexLayout().Get());
 
-    // store this and the view / projection in a constant buffer for the vertex shader to use
-    ConstantBuffer cb1;
-    cb1.mWorld = XMMatrixTranspose(mGO);
-    cb1.mView = XMMatrixTranspose(m_camera->CalculateViewMatrix());
-    cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
-    cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
-    m_d3dContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
+        // store this and the view / projection in a constant buffer for the vertex shader to use
+        ConstantBuffer cb1;
+        cb1.mWorld = XMMatrixTranspose(mGO);
+        cb1.mView = XMMatrixTranspose(m_camera->CalculateViewMatrix());
+        cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
+        cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
+        m_d3dContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
 
-    SetupLightsForRender();
+        SetupLightsForRender();
 
-    // Render the cube
-    m_d3dContext->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
-    m_d3dContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+        // Render the cube
+        m_d3dContext->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
+        m_d3dContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
-    m_d3dContext->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0);
-    m_d3dContext->PSSetConstantBuffers(2, 1, m_lightConstantBuffer.GetAddressOf());
-    ID3D11Buffer* materialCB = m_gameObject->GetMaterialConstantBuffer();
-    m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
+        m_d3dContext->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0);
+        m_d3dContext->PSSetConstantBuffers(2, 1, m_lightConstantBuffer.GetAddressOf());
+        ID3D11Buffer* materialCB = gameObject->GetMaterialConstantBuffer();
+        m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
 
-    m_gameObject->Render(m_d3dContext.Get());
+        gameObject->Render(m_d3dContext.Get());
+    }
 
     ID3D11RenderTargetView* nullRTV[2] = { nullptr, nullptr };  // Unbind render targets for use in next pass
-	m_d3dContext->OMSetRenderTargets(1, &nullRTV[0], nullptr);
+    m_d3dContext->OMSetRenderTargets(2, &nullRTV[0], nullptr);
 
     //
     // Bloom pass
@@ -224,7 +227,11 @@ void Game::Render()
 
     ImGui::Begin("Scene Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
         m_camera->RenderGUIControls();
-        m_gameObject->RenderGUIControls(m_d3dDevice.Get(), m_camera.get());
+        for (int i = 0; i < m_gameObjects.size(); i++) {
+            ImGui::PushID(i);
+            m_gameObjects[i]->RenderGUIControls(m_d3dDevice.Get(), m_camera.get());
+            ImGui::PopID();
+        }
     ImGui::End();
 
     ImGui::Begin("Post Processing Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
@@ -708,9 +715,6 @@ void Game::CreateCameras(int width, int height) {
 }
 
 void Game::CreateGameObjects() {
-    // Create and initialise GameObject
-    m_gameObject = std::make_shared<GameObject_Cube>();
-    m_gameObject->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
     D3D11_INPUT_ELEMENT_DESC layout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -720,7 +724,23 @@ void Game::CreateGameObjects() {
         { "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT , D3D11_INPUT_PER_VERTEX_DATA, 0 }
     };
     UINT numElements = ARRAYSIZE(layout);
-    m_gameObject->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
+
+    // Create and initialise GameObject
+    std::shared_ptr<GameObject> cube = std::make_shared<GameObject_Cube>();
+
+    cube->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
+    cube->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
+
+    m_gameObjects.push_back(cube);
+
+
+    // Create and initialise GameObject Another
+    std::shared_ptr<GameObject> quad = std::make_shared<GameObject_Quad>();
+
+    quad->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
+    quad->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
+
+    m_gameObjects.push_back(quad);
 
     m_bloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
     m_imageFilterComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"ImageFilterShader");
