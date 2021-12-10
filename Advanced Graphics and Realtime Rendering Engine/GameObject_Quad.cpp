@@ -82,7 +82,7 @@ void GameObject_Quad::Render(ID3D11DeviceContext* context) {
 }
 
 void GameObject_Quad::RenderGUIControls(ID3D11Device* device, Camera* camera) {
-	if (ImGui::CollapsingHeader("GameObject Controls")) {
+	if (ImGui::CollapsingHeader("Quad Controls")) {
 		GameObject::RenderGUIControls(device, camera);
 
 		// Texture selection

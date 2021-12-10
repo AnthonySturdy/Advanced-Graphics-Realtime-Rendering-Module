@@ -1,5 +1,5 @@
-Texture2D render : register(t0);
-Texture2D renderHDR : register(t1);
+Texture2DMS<float4> render : register(t0);
+Texture2DMS<float4> renderHDR : register(t1);
 RWTexture2D<float4> output : register(u0);
 
 cbuffer Parameters : register(b0){
@@ -11,7 +11,7 @@ cbuffer Parameters : register(b0){
 }
 
 [numthreads(8, 8, 1)]
-void CS( uint3 DTid : SV_DispatchThreadID )
+void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
 {
 	/***********************************************
 	MARKING SCHEME: Bloom (Screen Space Effect) and HDR
@@ -31,7 +31,8 @@ void CS( uint3 DTid : SV_DispatchThreadID )
     {
         for (float i = 1.0 / quality; i <= 1.0; i += 1.0 / quality)
         {
-            bloomCol += renderHDR[DTid.xy + float2(cos(d), sin(d)) * size * i];
+            float2 uv = DTid.xy + float2(cos(d), sin(d)) * size * i;
+            bloomCol += renderHDR[uv];
         }
     }
     

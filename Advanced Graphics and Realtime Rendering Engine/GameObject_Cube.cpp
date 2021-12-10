@@ -31,7 +31,7 @@ void GameObject_Cube::Render(ID3D11DeviceContext* context) {
 }
 
 void GameObject_Cube::RenderGUIControls(ID3D11Device* device, Camera* camera) {
-	if (ImGui::CollapsingHeader("GameObject Controls")) {
+	if (ImGui::CollapsingHeader("Cube Controls")) {
 		GameObject::RenderGUIControls(device, camera);
 
 		// Texture selection
