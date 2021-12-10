@@ -5,7 +5,7 @@ using namespace DirectX;
 
 #define NUM_INDICES 36
 
-GameObject::GameObject(XMFLOAT3 initPos = XMFLOAT3(), XMFLOAT3 initRot = XMFLOAT3(), XMFLOAT3 initScale = XMFLOAT3()) : m_position(initPos), m_rotation(initRot), m_scale(initScale), m_world(XMFLOAT4X4()) {
+GameObject::GameObject(XMFLOAT3 initPos, XMFLOAT3 initRot, XMFLOAT3 initScale) : m_position(initPos), m_rotation(initRot), m_scale(initScale), m_world(XMFLOAT4X4()) {
 	// Initialise world matrix
 	XMMATRIX scale = XMMatrixScalingFromVector(XMLoadFloat3(&m_scale));
 	XMMATRIX rotation = XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&m_rotation));

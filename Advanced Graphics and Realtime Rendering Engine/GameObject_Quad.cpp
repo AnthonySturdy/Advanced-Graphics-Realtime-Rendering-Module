@@ -1,17 +1,22 @@
 #include "pch.h"
 #include "GameObject_Quad.h"
 
+GameObject_Quad::GameObject_Quad(DirectX::XMFLOAT3 initPos, DirectX::XMFLOAT3 initRot, DirectX::XMFLOAT3 initScale) : GameObject(initPos, initRot, initScale) {
+}
+
+GameObject_Quad::~GameObject_Quad() {}
+
 HRESULT GameObject_Quad::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context) {
 	// load and setup textures
-	HRESULT hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-basecolor.dds", nullptr, &m_textureResourceView);
+	HRESULT hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Rock\\Rock-basecolor.dds", nullptr, &m_textureResourceView);
 	if (FAILED(hr))
 		return hr;
 
-	hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-normal.dds", nullptr, &m_normalResourceView);
+	hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Rock\\Rock-normal.dds", nullptr, &m_normalResourceView);
 	if (FAILED(hr))
 		return hr;
 
-	hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-height.dds", nullptr, &m_parallaxResourceView);
+	hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Rock\\Rock-height.dds", nullptr, &m_parallaxResourceView);
 	if (FAILED(hr))
 		return hr;
 

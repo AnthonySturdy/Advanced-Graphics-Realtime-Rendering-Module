@@ -5,11 +5,11 @@
 class Mesh {
 public:
 	Mesh(ID3D11Device* device, std::vector<SimpleVertex>& vertices, std::vector<WORD>& indices);
-	~Mesh() = default;
+	~Mesh(){}
 
 	ID3D11Buffer* GetVertexBuffer() const { return m_vertexBuffer.Get();}
 	ID3D11Buffer* GetIndexBuffer() const { return m_indexBuffer.Get(); }
-	int GetNumIndices() const { return numIndices; }
+	int GetNumIndices() { return numIndices; }
 
 private:
 	HRESULT InitialiseMeshData(ID3D11Device* device, std::vector<SimpleVertex>& vertices, std::vector<WORD>& indices);

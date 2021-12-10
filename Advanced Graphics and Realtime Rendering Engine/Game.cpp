@@ -707,7 +707,7 @@ void Game::CreateConstantBuffers() {
 
 void Game::CreateCameras(int width, int height) {
     // Create camera
-    m_camera = std::make_shared<Camera>(XMFLOAT4(-4.0f, 4.0f, -4.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+    m_camera = std::make_shared<Camera>(XMFLOAT4(-2.0f, 2.0f, -2.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
                                         Camera::CAMERA_TYPE::PERSPECTIVE,
                                         width / (float)height,
                                         DirectX::XM_PIDIV2,
@@ -726,7 +726,7 @@ void Game::CreateGameObjects() {
     UINT numElements = ARRAYSIZE(layout);
 
     // Create and initialise GameObject
-    std::shared_ptr<GameObject> cube = std::make_shared<GameObject_Cube>();
+    std::shared_ptr<GameObject_Cube> cube = std::make_shared<GameObject_Cube>(XMFLOAT3(0, 0, 0), XMFLOAT3(0, 0, 0), XMFLOAT3(1, 1, 1));
 
     cube->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
     cube->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
@@ -735,7 +735,7 @@ void Game::CreateGameObjects() {
 
 
     // Create and initialise GameObject Another
-    std::shared_ptr<GameObject> quad = std::make_shared<GameObject_Quad>();
+    std::shared_ptr<GameObject_Quad> quad = std::make_shared<GameObject_Quad>(XMFLOAT3(0, -1.2f, 0), XMFLOAT3(0, 0, 0), XMFLOAT3(5, 5, 5));
 
     quad->InitMesh(m_d3dDevice.Get(), m_d3dContext.Get());
     quad->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);

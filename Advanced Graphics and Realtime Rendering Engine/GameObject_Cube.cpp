@@ -1,6 +1,10 @@
 #include "pch.h"
 #include "GameObject_Cube.h"
 
+GameObject_Cube::GameObject_Cube(DirectX::XMFLOAT3 initPos, DirectX::XMFLOAT3 initRot, DirectX::XMFLOAT3 initScale) : GameObject(initPos, initRot, initScale) {}
+
+GameObject_Cube::~GameObject_Cube() {}
+
 HRESULT GameObject_Cube::InitMesh(ID3D11Device* device, ID3D11DeviceContext* context) {
 	// load and setup textures
 	HRESULT hr = DirectX::CreateDDSTextureFromFile(device, L"Resources\\Pipes\\pipes-basecolor.dds", nullptr, &m_textureResourceView);
