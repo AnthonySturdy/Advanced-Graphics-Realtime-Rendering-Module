@@ -10,7 +10,7 @@ Texture2D txNormal : register(t1);
 Texture2D txParallax : register(t2);
 SamplerState samLinear : register(s0);
 
-#define MAX_LIGHTS 1
+#define MAX_LIGHTS 2
 // Light types.
 #define DIRECTIONAL_LIGHT 0
 #define POINT_LIGHT 1
@@ -180,7 +180,7 @@ float CalculateParallaxSelfShadow(float3 lightDir, float2 initialTexCoords)
         currentLayerDepth -= layerDepth;
     }
 
-    return currentLayerDepth > currentDepthMapValue ? pow(1.0f - currentLayerDepth, 1.5f) : 1.0f;
+    return currentLayerDepth > currentDepthMapValue ? pow(1.0f - currentLayerDepth, 5.0f) : 1.0f;
 }
 
 //--------------------------------------------------------------------------------------
@@ -241,9 +241,13 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
         texCoords = currentTexCoords;
 		
 		// Self shadowing
-        float3 L = mul(tbn, normalize(Lights[0].Position.xyz - IN.worldPos.xyz));
-        L.y = -L.y;
-        shadowMultiplier = CalculateParallaxSelfShadow(L, texCoords);
+        for (int i = 0; i < MAX_LIGHTS; i++)
+        {
+            float3 L = mul(tbn, normalize(Lights[i].Position.xyz - IN.worldPos.xyz));
+            L.y = -L.y;
+            shadowMultiplier += CalculateParallaxSelfShadow(L, texCoords);
+        }
+        shadowMultiplier /= MAX_LIGHTS;
     }
 
 	/***********************************************

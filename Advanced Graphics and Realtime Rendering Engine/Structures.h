@@ -92,7 +92,7 @@ struct Light {
 	//----------------------------------- (16 byte boundary)
 };  // Total:                              80 bytes ( 5 * 16 )
 
-#define MAX_LIGHTS 1
+#define MAX_LIGHTS 2
 
 struct LightPropertiesConstantBuffer {
 	LightPropertiesConstantBuffer()

@@ -68,6 +68,12 @@ void Game::Render()
         return;
     }
 
+    // Start the ImGui frame
+    ImGui_ImplDX11_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
+
     ID3D11UnorderedAccessView* nullUav = nullptr;
     ID3D11ShaderResourceView* nullSrv = nullptr;
 
@@ -80,11 +86,7 @@ void Game::Render()
     m_d3dContext->ClearRenderTargetView(*rtvs[1], &tpClear.x);  // Clear HDR RTV with transparent
     SetRenderTargetAndClear(rtvs[0], m_rttDepthStencilViews.Get(), 2);  // Clear main RTV and set render target
 
-    // Start the Dear ImGui frame
-    ImGui_ImplDX11_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-    ImGuizmo::BeginFrame();
+    SetupLightsForRender();
 
     /***********************************************
     MARKING SCHEME: Special Effects Pipeline
@@ -112,8 +114,6 @@ void Game::Render()
         cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
         cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
         m_d3dContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
-
-        SetupLightsForRender();
 
         // Render the cube
         m_d3dContext->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
@@ -270,13 +270,13 @@ void Game::SetupLightsForRender() {
     Light light;
     light.Enabled = static_cast<int>(true);
     light.LightType = PointLight;
-    light.Color = XMFLOAT4(Colors::White);
+    light.Color = XMFLOAT4(Colors::Green);
     light.SpotAngle = XMConvertToRadians(45.0f);
     light.ConstantAttenuation = 1.0f;
     light.LinearAttenuation = .1f;
     light.QuadraticAttenuation = 0.01f;
 
-    XMFLOAT4 LightPosition(0.0f, 4.0f, -4.0f, 1.0f);
+    XMFLOAT4 LightPosition(0.0f, 2.0f, -4.0f, 1.0f);
     light.Position = LightPosition;
     XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = XMVector3Normalize(LightDirection);
@@ -285,6 +285,11 @@ void Game::SetupLightsForRender() {
     LightPropertiesConstantBuffer lightProperties;
     lightProperties.EyePosition = m_camera->GetCameraPosition();
     lightProperties.Lights[0] = light;
+
+    light.Position = XMFLOAT4(0.0f, 0.5f, 2.0f, 1.0f);
+    light.Color = XMFLOAT4(Colors::Purple);
+    lightProperties.Lights[1] = light;
+
     m_d3dContext->UpdateSubresource(m_lightConstantBuffer.Get(), 0, nullptr, &lightProperties, 0, 0);
 }
 
