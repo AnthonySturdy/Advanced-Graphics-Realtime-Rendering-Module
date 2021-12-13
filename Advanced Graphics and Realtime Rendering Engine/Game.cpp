@@ -133,34 +133,14 @@ void Game::Render()
     //
     // Bloom pass
     //
-    // Convert RTV to SRV for passing into shader
-    ComPtr<ID3D11Resource> geometryPassResource;
-    m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
-    ComPtr<ID3D11ShaderResourceView> geometryPassSrv;
-    m_d3dDevice->CreateShaderResourceView(geometryPassResource.Get(), nullptr, geometryPassSrv.ReleaseAndGetAddressOf());
-
-    ComPtr<ID3D11Resource> geometryPassHDRResource;
-    m_rttRenderTargetViewsHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
-    ComPtr<ID3D11ShaderResourceView> geometryPassHDRSrv;
-    m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
-
-    ComPtr<ID3D11Resource> depthResource;
-    m_rttDepthStencilViews->GetResource(depthResource.ReleaseAndGetAddressOf());
-    ComPtr<ID3D11ShaderResourceView> depthSrv;
-    D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
-    depthSrvDesc.Texture2D.MipLevels = 1;
-    depthSrvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    m_d3dDevice->CreateShaderResourceView(depthResource.Get(), &depthSrvDesc, depthSrv.ReleaseAndGetAddressOf());
-
     // Update GPU with Gaussian blur cbuffer
     static GaussianBlurConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
     m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
 
     // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, depthSrv.GetAddressOf());
-    m_d3dContext->CSSetShaderResources(1, 1, geometryPassHDRSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(0, 1, m_geometryPassSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(1, 1, m_geometryPassHDRSrv.GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
 
     // Dispatch horizontal blur pass
@@ -310,10 +290,11 @@ void Game::SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthSten
     m_d3dContext->ClearRenderTargetView(*rtv, &clearColour.x);
     m_d3dContext->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+    m_d3dContext->OMSetDepthStencilState(m_rttDepthStencilState.Get(), 0);
     m_d3dContext->OMSetRenderTargets(numViews, rtv, dsv);
 
     // Set the viewport.
-    CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight));
+    CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_outputWidth), static_cast<float>(m_outputHeight), 0.0f, 1.0f);
     m_d3dContext->RSSetViewports(1, &viewport);
 }
 
@@ -537,16 +518,50 @@ void Game::CreateResources()
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
-    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE);
-    depthStencilDesc.SampleDesc.Count = 1;
-    depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;
     ComPtr<ID3D11Texture2D> depthStencil;
+    D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+    depthStencilDesc.Width = backBufferWidth;
+    depthStencilDesc.Height = backBufferHeight;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.ArraySize = 1;
+    depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.SampleDesc.Quality = 0;
+    depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+    depthStencilDesc.CPUAccessFlags = 0;
+    depthStencilDesc.MiscFlags = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
-    CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+    depthStencilViewDesc.Flags = 0;
     depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
+
+    // Create depth stencil state
+    D3D11_DEPTH_STENCIL_DESC dsDesc;
+
+    dsDesc.DepthEnable = true;
+    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+    dsDesc.StencilEnable = true;
+    dsDesc.StencilReadMask = 0xFF;
+    dsDesc.StencilWriteMask = 0xFF;
+
+    dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+    dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+    dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+    dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+    dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilState(&dsDesc, m_rttDepthStencilState.ReleaseAndGetAddressOf()));
 
     // Create intermediate render texture and depth stencil
     Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTex;
@@ -595,6 +610,23 @@ void Game::CreateResources()
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&postProcTexDesc, nullptr, postProcUAVTex.GetAddressOf()));
     DX::ThrowIfFailed(m_d3dDevice->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_postProcUnorderedAccessView.ReleaseAndGetAddressOf()));
 
+    // Create SRVs of render textures
+    ComPtr<ID3D11Resource> geometryPassResource;
+    m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
+    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(geometryPassResource.Get(), nullptr, m_geometryPassSrv.ReleaseAndGetAddressOf()));
+
+    ComPtr<ID3D11Resource> geometryPassHDRResource;
+    m_rttRenderTargetViewsHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
+    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, m_geometryPassHDRSrv.ReleaseAndGetAddressOf()));
+
+    ComPtr<ID3D11Resource> depthResource;
+    m_rttDepthStencilViews->GetResource(depthResource.ReleaseAndGetAddressOf());
+    D3D11_SHADER_RESOURCE_VIEW_DESC sr_desc = {};
+    sr_desc.Format = DXGI_FORMAT_R32_FLOAT;
+    sr_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    sr_desc.Texture2D.MostDetailedMip = 0;
+    sr_desc.Texture2D.MipLevels = -1;
+    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(depthResource.Get(), &sr_desc, m_depthSrv.ReleaseAndGetAddressOf()));
 }
 
 void Game::InitialiseImGui(HWND hwnd)

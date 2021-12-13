@@ -77,6 +77,13 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_rttRenderTargetViewsHDR;      // HDR extracted during geometry render
     Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>   m_postProcUnorderedAccessView;  // Post processing passes read/write, final image rendered to viewport
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_rttDepthStencilViews;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>     m_rttDepthStencilState;
+
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_geometryPassSrv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_geometryPassHDRSrv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_depthSrv;
+
+
     ImVec2                                              m_viewportSize;
 
     // Rendering loop timer.
