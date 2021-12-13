@@ -144,13 +144,22 @@ void Game::Render()
     ComPtr<ID3D11ShaderResourceView> geometryPassHDRSrv;
     m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, geometryPassHDRSrv.ReleaseAndGetAddressOf());
 
+    ComPtr<ID3D11Resource> depthResource;
+    m_rttDepthStencilViews->GetResource(depthResource.ReleaseAndGetAddressOf());
+    ComPtr<ID3D11ShaderResourceView> depthSrv;
+    D3D11_SHADER_RESOURCE_VIEW_DESC depthSrvDesc = {};
+    depthSrvDesc.Texture2D.MipLevels = 1;
+    depthSrvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    depthSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    m_d3dDevice->CreateShaderResourceView(depthResource.Get(), &depthSrvDesc, depthSrv.ReleaseAndGetAddressOf());
+
     // Update GPU with Gaussian blur cbuffer
     static GaussianBlurConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
     m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
 
     // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, geometryPassSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(0, 1, depthSrv.GetAddressOf());
     m_d3dContext->CSSetShaderResources(1, 1, geometryPassHDRSrv.GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
 
@@ -505,9 +514,6 @@ void Game::CreateResources()
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
         fsSwapChainDesc.Windowed = TRUE;
 
-        //m_d3dDevice->CheckMultisampleQualityLevels(swapChainDesc.Format, swapChainDesc.SampleDesc.Count, &swapChainDesc.SampleDesc.Quality);
-        //swapChainDesc.SampleDesc.Quality--;
-
         // Create a SwapChain from a Win32 window.
         DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
             m_d3dDevice.Get(),
@@ -531,12 +537,15 @@ void Game::CreateResources()
 
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
-    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
+    CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE);
     depthStencilDesc.SampleDesc.Count = 1;
+    depthStencilDesc.Format = DXGI_FORMAT_R32_TYPELESS;
     ComPtr<ID3D11Texture2D> depthStencil;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
     CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
     // Create intermediate render texture and depth stencil
