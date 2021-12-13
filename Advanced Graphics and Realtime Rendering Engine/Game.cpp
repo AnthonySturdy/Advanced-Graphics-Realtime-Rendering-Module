@@ -97,7 +97,7 @@ void Game::Render()
     //
     // Geometry render pass
     //
-    for (std::shared_ptr<GameObject> gameObject : m_gameObjects) {
+    for (const auto& gameObject : m_gameObjects) {
         // get the game object world transform
         XMMATRIX mGO = XMLoadFloat4x4(gameObject->GetTransform());
 
