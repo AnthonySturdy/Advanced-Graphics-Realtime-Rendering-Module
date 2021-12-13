@@ -497,7 +497,7 @@ void Game::CreateResources()
         swapChainDesc.Width = backBufferWidth;
         swapChainDesc.Height = backBufferHeight;
         swapChainDesc.Format = backBufferFormat;
-        swapChainDesc.SampleDesc.Count = 4;
+        swapChainDesc.SampleDesc.Count = 1;
         swapChainDesc.SampleDesc.Quality = 0;
         swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         swapChainDesc.BufferCount = backBufferCount;
@@ -505,8 +505,8 @@ void Game::CreateResources()
         DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
         fsSwapChainDesc.Windowed = TRUE;
 
-        m_d3dDevice->CheckMultisampleQualityLevels(swapChainDesc.Format, swapChainDesc.SampleDesc.Count, &swapChainDesc.SampleDesc.Quality);
-        swapChainDesc.SampleDesc.Quality--;
+        //m_d3dDevice->CheckMultisampleQualityLevels(swapChainDesc.Format, swapChainDesc.SampleDesc.Count, &swapChainDesc.SampleDesc.Quality);
+        //swapChainDesc.SampleDesc.Quality--;
 
         // Create a SwapChain from a Win32 window.
         DX::ThrowIfFailed(dxgiFactory->CreateSwapChainForHwnd(
@@ -532,12 +532,11 @@ void Game::CreateResources()
     // Allocate a 2-D surface as the depth/stencil buffer and
     // create a DepthStencil view on this surface to use on bind.
     CD3D11_TEXTURE2D_DESC depthStencilDesc(depthBufferFormat, backBufferWidth, backBufferHeight, 1, 1, D3D11_BIND_DEPTH_STENCIL);
-    depthStencilDesc.SampleDesc.Count = 4;
+    depthStencilDesc.SampleDesc.Count = 1;
     ComPtr<ID3D11Texture2D> depthStencil;
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, depthStencil.GetAddressOf()));
 
     CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-    depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
     // Create intermediate render texture and depth stencil
@@ -548,7 +547,7 @@ void Game::CreateResources()
     rttDesc.MipLevels = 1;
     rttDesc.ArraySize = 1;
     rttDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    rttDesc.SampleDesc.Count = 4;
+    rttDesc.SampleDesc.Count = 1;
     rttDesc.Usage = D3D11_USAGE_DEFAULT;
     rttDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
     rttDesc.CPUAccessFlags = 0;
