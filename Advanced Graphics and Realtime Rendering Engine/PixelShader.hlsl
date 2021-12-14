@@ -276,6 +276,8 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 
     float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 
+    finalColor.w = IN.Pos.w;
+
     PS_OUTPUT output = (PS_OUTPUT) 0;
     output.colour = finalColor;
     output.HDR = float4(emissive.rgb, 1.0f);
