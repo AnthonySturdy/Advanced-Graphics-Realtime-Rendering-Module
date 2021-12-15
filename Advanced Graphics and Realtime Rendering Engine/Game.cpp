@@ -130,13 +130,34 @@ void Game::Render()
     ID3D11RenderTargetView* nullRTV[2] = { nullptr, nullptr };  // Unbind render targets for use in next pass
     m_d3dContext->OMSetRenderTargets(2, &nullRTV[0], nullptr);
 
+	//
+    // Depth Of Field pass
+    //
+    // Update GPU with Gaussian blur cbuffer
+    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane() };
+    dofcb.farPlaneDepth = m_camera->GetFarPlane();
+    m_d3dContext->UpdateSubresource(m_depthOfFieldConstantBuffer.Get(), 0, nullptr, &dofcb, 0, 0);
+    m_d3dContext->CSSetConstantBuffers(0, 1, m_depthOfFieldConstantBuffer.GetAddressOf());
+
+    // Pass textures to compute shader
+    m_d3dContext->CSSetShaderResources(0, 1, m_geometryPassSrv.GetAddressOf());
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
+
+    // Dispatch horizontal blur pass
+    m_d3dContext->CSSetShader(m_depthOfFieldComputeShader->GetComputeShader(), nullptr, 0); 
+    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
+
+    // Unbind textures after Dispatch
+    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
+    m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
+
     //
     // Bloom pass
     //
     // Update GPU with Gaussian blur cbuffer
-    static GaussianBlurConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
-    m_d3dContext->UpdateSubresource(m_gaussianBlurConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
-    m_d3dContext->CSSetConstantBuffers(0, 1, m_gaussianBlurConstantBuffer.GetAddressOf());
+    static BloomConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
+    m_d3dContext->UpdateSubresource(m_bloomConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
+    m_d3dContext->CSSetConstantBuffers(0, 1, m_bloomConstantBuffer.GetAddressOf());
 
     // Pass textures to compute shader
     m_d3dContext->CSSetShaderResources(0, 1, m_geometryPassSrv.GetAddressOf());
@@ -224,7 +245,13 @@ void Game::Render()
     ImGui::End();
 
     ImGui::Begin("Post Processing Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
-		if(ImGui::CollapsingHeader("Guassian Blur")) {
+	    if (ImGui::CollapsingHeader("Depth of Field")) {
+	        ImGui::DragFloat("Size", &dofcb.size, 0.1f, 0.0f, 50.0f);
+	        ImGui::DragFloat("Quality", &dofcb.quality, 0.1f, 0.0f, 50.0f);
+	        ImGui::DragFloat("Directions", &dofcb.directions, 0.1f, 0.0f, 50.0f);
+	    }
+
+		if(ImGui::CollapsingHeader("Bloom")) {
             ImGui::DragFloat("Size", &gbcb.size, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Quality", &gbcb.quality, 0.1f, 0.0f, 50.0f);
             ImGui::DragFloat("Directions", &gbcb.directions, 0.1f, 0.0f, 50.0f);
@@ -739,10 +766,10 @@ void Game::CreateConstantBuffers() {
         return;
 
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(GaussianBlurConstantBuffer);
+    bd.ByteWidth = sizeof(BloomConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_gaussianBlurConstantBuffer.GetAddressOf());
+    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_bloomConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
 
@@ -751,6 +778,14 @@ void Game::CreateConstantBuffers() {
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
     hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_imageFilterConstantBuffer.GetAddressOf());
+    if (FAILED(hr))
+        return;
+
+    bd.Usage = D3D11_USAGE_DEFAULT;
+    bd.ByteWidth = sizeof(DepthOfFieldConstantBuffer);
+    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    bd.CPUAccessFlags = 0;
+    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_depthOfFieldConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
 }
@@ -794,6 +829,7 @@ void Game::CreateGameObjects() {
 
     m_bloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
     m_imageFilterComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"ImageFilterShader");
+    m_depthOfFieldComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"DepthOfFieldShader");
 }
 
 void Game::OnDeviceLost()

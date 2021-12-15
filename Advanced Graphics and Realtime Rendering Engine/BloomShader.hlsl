@@ -4,8 +4,8 @@ RWTexture2D<float4> output : register(u0);
 
 cbuffer Parameters : register(b0){
     float size;         // BLUR SIZE (Radius)
-    float quality;      // BLUR QUALITY (Default 4.0 - More is better but slower)
-    float directions;   // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+    float quality;      // BLUR QUALITY 
+    float directions;   // BLUR DIRECTIONS 
 
     float _padding;
 }
@@ -38,5 +38,5 @@ void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
     
     // Output to screen
     bloomCol /= quality * directions - 15.0;
-    output[DTid.xy] = float4(render[DTid.xy].rgb + bloomCol, 1.0f);
+    output[DTid.xy] = float4(output[DTid.xy].rgb + bloomCol, 1.0f);
 }

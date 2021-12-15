@@ -107,7 +107,7 @@ struct LightPropertiesConstantBuffer {
 	Light               Lights[MAX_LIGHTS]; // 80 * 8 bytes
 };  // Total:                                  672 bytes (42 * 16)
 
-struct GaussianBlurConstantBuffer {
+struct BloomConstantBuffer {
 	float size;
 	float quality;
 	float directions;
@@ -123,4 +123,11 @@ struct ImageFilterConstantBuffer {
 	// 16 bytes
 	float resolution[2];
 	float __padding[2];
+};
+
+struct DepthOfFieldConstantBuffer {
+	float size;
+	float quality;
+	float directions;
+	float farPlaneDepth;
 };

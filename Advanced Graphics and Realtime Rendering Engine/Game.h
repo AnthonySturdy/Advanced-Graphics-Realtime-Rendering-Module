@@ -98,8 +98,11 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
 
+    std::shared_ptr<ComputeShader> m_depthOfFieldComputeShader;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_depthOfFieldConstantBuffer;
+
     std::shared_ptr<ComputeShader> m_bloomComputeShader;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_gaussianBlurConstantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_bloomConstantBuffer;
 
     std::shared_ptr<ComputeShader> m_imageFilterComputeShader;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_imageFilterConstantBuffer;
