@@ -134,8 +134,10 @@ void Game::Render()
     // Depth Of Field pass
     //
     // Update GPU with Gaussian blur cbuffer
-    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane() };
+    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane(), m_outputWidth, m_outputHeight, 1.0f };
     dofcb.farPlaneDepth = m_camera->GetFarPlane();
+    dofcb.resolution[0] = m_outputWidth;
+    dofcb.resolution[1] = m_outputHeight;
     m_d3dContext->UpdateSubresource(m_depthOfFieldConstantBuffer.Get(), 0, nullptr, &dofcb, 0, 0);
     m_d3dContext->CSSetConstantBuffers(0, 1, m_depthOfFieldConstantBuffer.GetAddressOf());
 
@@ -249,6 +251,8 @@ void Game::Render()
 	        ImGui::DragFloat("Size", &dofcb.size, 0.1f, 0.0f, 50.0f);
 	        ImGui::DragFloat("Quality", &dofcb.quality, 0.1f, 0.0f, 50.0f);
 	        ImGui::DragFloat("Directions", &dofcb.directions, 0.1f, 0.0f, 50.0f);
+            ImGui::DragFloat("Depth", &dofcb.depth, 0.1f, 0.0f, 50.0f);
+
 	    }
 
 		if(ImGui::CollapsingHeader("Bloom")) {

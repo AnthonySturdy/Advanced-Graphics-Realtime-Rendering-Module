@@ -130,4 +130,8 @@ struct DepthOfFieldConstantBuffer {
 	float quality;
 	float directions;
 	float farPlaneDepth;
+
+	int resolution[2];
+	float depth;
+	float _padding;
 };

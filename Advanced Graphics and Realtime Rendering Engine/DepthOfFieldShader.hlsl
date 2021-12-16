@@ -7,10 +7,13 @@ cbuffer Parameters : register(b0)
     float quality; // BLUR QUALITY 
     float directions; // BLUR DIRECTIONS 
     float farPlaneDepth;
+    int2 resolution;
+    float depth;
+    float _padding;
 }
 
 [numthreads(8, 8, 1)]
-void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
+void CS(uint3 DTid : SV_DispatchThreadID)
 {
 	/***********************************************
 	MARKING SCHEME: 
@@ -18,8 +21,11 @@ void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
 	REFERENCE:      https://www.shadertoy.com/view/Xltfzj
 	***********************************************/
 
-    const float PI2 = 6.28318530718; // Pi*2
-    const float depth = render[DTid.xy].w / farPlaneDepth;
+    const float PI2 = 6.283185f; // Pi*2
+    const float midPixelDepth = render[resolution / 2].w / farPlaneDepth;
+    const float curPixelDepth = render[DTid.xy].w / farPlaneDepth;
+
+    const float targetDepth = (abs(curPixelDepth - midPixelDepth) / midPixelDepth) / depth;
     
     // Pixel colour
     float3 blurCol = render[DTid.xy].rgb;
@@ -37,5 +43,8 @@ void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
     // Output to screen
     blurCol /= quality * directions - 15.0;
 
-    output[DTid.xy] = float4(lerp(render[DTid.xy].rgb, blurCol, depth), 1.0f);
+    output[DTid.xy] = float4(lerp(render[DTid.xy].rgb, blurCol, targetDepth), 1.0f);
+
+    if(distance(resolution / 2, DTid.xy) < 5)
+        output[DTid.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
 }

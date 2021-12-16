@@ -11,7 +11,7 @@ cbuffer Parameters : register(b0){
 }
 
 [numthreads(8, 8, 1)]
-void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
+void CS(uint3 DTid : SV_DispatchThreadID)
 {
 	/***********************************************
 	MARKING SCHEME: Bloom (Screen Space Effect) and HDR
@@ -21,7 +21,7 @@ void CS(uint3 DTid : SV_DispatchThreadID, int id : SV_GroupIndex)
 					https://www.shadertoy.com/view/Xltfzj
 	***********************************************/
 
-    const float PI2 = 6.28318530718; // Pi*2
+    const float PI2 = 6.283185f; // Pi*2
     
     // Pixel colour
     float3 bloomCol = renderHDR[DTid.xy].rgb;
