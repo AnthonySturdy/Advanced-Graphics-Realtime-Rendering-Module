@@ -25,7 +25,14 @@ void CS(uint3 DTid : SV_DispatchThreadID)
     const float midPixelDepth = render[resolution / 2].w / farPlaneDepth;
     const float curPixelDepth = render[DTid.xy].w / farPlaneDepth;
 
-    const float targetDepth = (abs(curPixelDepth - midPixelDepth) / midPixelDepth) / depth;
+    if(curPixelDepth == 1.0f) {
+        output[DTid.xy] = float4(render[DTid.xy].rgb, 1.0f);
+        return;
+    }
+
+    float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / depth;
+    if (targetDepth < 0)
+        targetDepth = abs(targetDepth) * 5.0f;
     
     // Pixel colour
     float3 blurCol = render[DTid.xy].rgb;
@@ -42,9 +49,5 @@ void CS(uint3 DTid : SV_DispatchThreadID)
     
     // Output to screen
     blurCol /= quality * directions - 15.0;
-
     output[DTid.xy] = float4(lerp(render[DTid.xy].rgb, blurCol, targetDepth), 1.0f);
-
-    if(distance(resolution / 2, DTid.xy) < 5)
-        output[DTid.xy] = float4(1.0f, 1.0f, 1.0f, 1.0f);
 }
