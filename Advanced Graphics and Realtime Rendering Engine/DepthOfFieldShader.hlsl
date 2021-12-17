@@ -16,39 +16,33 @@ cbuffer Parameters : register(b0)
 void CS(uint3 DTid : SV_DispatchThreadID)
 {
 	/***********************************************
-	MARKING SCHEME: 
-	DESCRIPTION:	
+	MARKING SCHEME: Depth of Field 
+	DESCRIPTION:	Gaussian blur applied and strength determined by
+					scene depth and what the camera is pointing at
 	REFERENCE:      https://www.shadertoy.com/view/Xltfzj
 	***********************************************/
 
     const float PI2 = 6.283185f; // Pi*2
-    const float midPixelDepth = render[resolution / 2].w / farPlaneDepth;
-    const float curPixelDepth = render[DTid.xy].w / farPlaneDepth;
+    const float midPixelDepth = render[resolution / 2].w / farPlaneDepth;   // Depth of pixel at centre of screen
+    const float curPixelDepth = render[DTid.xy].w / farPlaneDepth;  // Depth of current pixel
 
-    if(curPixelDepth == 1.0f) {
-        output[DTid.xy] = float4(render[DTid.xy].rgb, 1.0f);
-        return;
-    }
-
-    float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / depth;
-    if (targetDepth < 0)
+    float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / depth;  // Depth diff between mid and cur. pixel
+    if (targetDepth < 0)    // If foreground should be blurred
         targetDepth = abs(targetDepth) * 4.0f;
     targetDepth = saturate(targetDepth);
     
-    // Pixel colour
+    // Blur algorithm
     float3 blurCol = render[DTid.xy].rgb;
-    
-    // Blur calculations
     for (float d = 0.0; d < PI2; d += PI2 / directions)
     {
         for (float i = 1.0 / quality; i <= 1.0; i += 1.0 / quality)
         {
-            float2 uv = DTid.xy + float2(cos(d), sin(d)) * size * i;
+            const float2 uv = DTid.xy + float2(cos(d), sin(d)) * size * i;
             blurCol += render[uv].rgb;
         }
     }
     
     // Output to screen
     blurCol /= quality * directions - 15.0;
-    output[DTid.xy] = float4(lerp(render[DTid.xy].rgb, blurCol, targetDepth), 1.0f);
+    output[DTid.xy] = float4(lerp(render[DTid.xy].rgb, blurCol, targetDepth), 1.0f);    // Interpolate based on depth calculation
 }
