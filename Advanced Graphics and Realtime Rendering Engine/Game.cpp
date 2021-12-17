@@ -134,7 +134,7 @@ void Game::Render()
     // Depth Of Field pass
     //
     // Update GPU with Gaussian blur cbuffer
-    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane(), m_outputWidth, m_outputHeight, 1.0f };
+    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane(), m_outputWidth, m_outputHeight, 3.5f };
     dofcb.farPlaneDepth = m_camera->GetFarPlane();
     dofcb.resolution[0] = m_outputWidth;
     dofcb.resolution[1] = m_outputHeight;

@@ -32,7 +32,8 @@ void CS(uint3 DTid : SV_DispatchThreadID)
 
     float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / depth;
     if (targetDepth < 0)
-        targetDepth = abs(targetDepth) * 5.0f;
+        targetDepth = abs(targetDepth) * 4.0f;
+    targetDepth = saturate(targetDepth);
     
     // Pixel colour
     float3 blurCol = render[DTid.xy].rgb;
