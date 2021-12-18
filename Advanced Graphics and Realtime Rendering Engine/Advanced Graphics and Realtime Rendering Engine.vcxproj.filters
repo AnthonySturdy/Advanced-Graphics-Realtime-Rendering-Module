@@ -81,6 +81,8 @@
     <ClInclude Include="GameObject_Cube.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="GameObject_Quad.h" />
+    <ClInclude Include="RenderPipelineStage.h" />
+    <ClInclude Include="RenderPipelineGeometryPass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -132,6 +134,8 @@
     <ClCompile Include="GameObject_Cube.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="GameObject_Quad.cpp" />
+    <ClCompile Include="RenderPipelineStage.cpp" />
+    <ClCompile Include="RenderPipelineGeometryPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

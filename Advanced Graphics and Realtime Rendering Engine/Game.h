@@ -8,6 +8,8 @@
 #include "GameObject_Quad.h"
 #include "Camera.h"
 #include "ComputeShader.h"
+#include "RenderPipelineStage.h"
+#include "RenderPipelineGeometryPass.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -46,8 +48,6 @@ private:
     void Update(DX::StepTimer const& timer);
     void Render();
 
-    void SetupLightsForRender();
-
     void SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthStencilView* dsv, int numViews = 1);
     void Present();
 
@@ -73,16 +73,8 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_depthStencilView;
 
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_rttRenderTargetViews;         // Geometry render
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_rttRenderTargetViewsHDR;      // HDR extracted during geometry render
+    
     Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>   m_postProcUnorderedAccessView;  // Post processing passes read/write, final image rendered to viewport
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_rttDepthStencilViews;
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState>     m_rttDepthStencilState;
-
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_geometryPassSrv;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_geometryPassHDRSrv;
-    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_depthSrv;
-
 
     ImVec2                                              m_viewportSize;
 
@@ -95,8 +87,6 @@ private:
     // Scene
     std::shared_ptr<Camera> m_camera;
     std::vector<std::shared_ptr<GameObject>> m_gameObjects;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightConstantBuffer;
 
     std::shared_ptr<ComputeShader> m_depthOfFieldComputeShader;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_depthOfFieldConstantBuffer;
@@ -106,4 +96,6 @@ private:
 
     std::shared_ptr<ComputeShader> m_imageFilterComputeShader;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_imageFilterConstantBuffer;
+
+    RenderPipelineGeometryPass* geometryPass;
 };

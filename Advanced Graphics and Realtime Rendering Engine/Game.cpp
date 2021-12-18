@@ -77,58 +77,13 @@ void Game::Render()
     ID3D11UnorderedAccessView* nullUav = nullptr;
     ID3D11ShaderResourceView* nullSrv = nullptr;
 
-    // Bind render target to intermediate RenderTargetView
-    ID3D11RenderTargetView** rtvs[2];
-    rtvs[0] = m_rttRenderTargetViews.GetAddressOf();
-    rtvs[1] = m_rttRenderTargetViewsHDR.GetAddressOf();
-
-    XMFLOAT4 tpClear = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);                
-    m_d3dContext->ClearRenderTargetView(*rtvs[1], &tpClear.x);  // Clear HDR RTV with transparent
-    SetRenderTargetAndClear(rtvs[0], m_rttDepthStencilViews.Get(), 2);  // Clear main RTV and set render target
-
-    SetupLightsForRender();
-
     /***********************************************
     MARKING SCHEME: Special Effects Pipeline
     DESCRIPTION:	Render to texture, Post processing effects applied, Render texture to
 					quad via ImGui image.
     ***********************************************/
 
-    //
-    // Geometry render pass
-    //
-    for (const auto& gameObject : m_gameObjects) {
-        // get the game object world transform
-        XMMATRIX mGO = XMLoadFloat4x4(gameObject->GetTransform());
-
-        // Get the game object's shader
-        Shader* shader = gameObject->GetShader().get();
-
-        // Set active vertex layout
-        m_d3dContext->IASetInputLayout(shader->GetVertexLayout().Get());
-
-        // store this and the view / projection in a constant buffer for the vertex shader to use
-        ConstantBuffer cb1;
-        cb1.mWorld = XMMatrixTranspose(mGO);
-        cb1.mView = XMMatrixTranspose(m_camera->CalculateViewMatrix());
-        cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
-        cb1.vOutputColor = XMFLOAT4(0, 0, 0, 0);
-        m_d3dContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
-
-        // Render the cube
-        m_d3dContext->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
-        m_d3dContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
-
-        m_d3dContext->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0);
-        m_d3dContext->PSSetConstantBuffers(2, 1, m_lightConstantBuffer.GetAddressOf());
-        ID3D11Buffer* materialCB = gameObject->GetMaterialConstantBuffer();
-        m_d3dContext->PSSetConstantBuffers(1, 1, &materialCB);
-
-        gameObject->Render(m_d3dContext.Get());
-    }
-
-    ID3D11RenderTargetView* nullRTV[2] = { nullptr, nullptr };  // Unbind render targets for use in next pass
-    m_d3dContext->OMSetRenderTargets(2, &nullRTV[0], nullptr);
+    geometryPass->Render();
 
 	//
     // Depth Of Field pass
@@ -142,7 +97,7 @@ void Game::Render()
     m_d3dContext->CSSetConstantBuffers(0, 1, m_depthOfFieldConstantBuffer.GetAddressOf());
 
     // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, m_geometryPassSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(0, 1, geometryPass->GetSrv().GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
 
     // Dispatch horizontal blur pass
@@ -162,8 +117,8 @@ void Game::Render()
     m_d3dContext->CSSetConstantBuffers(0, 1, m_bloomConstantBuffer.GetAddressOf());
 
     // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, m_geometryPassSrv.GetAddressOf());
-    m_d3dContext->CSSetShaderResources(1, 1, m_geometryPassHDRSrv.GetAddressOf());
+    m_d3dContext->CSSetShaderResources(0, 1, geometryPass->GetSrv().GetAddressOf());
+    m_d3dContext->CSSetShaderResources(1, 1, geometryPass->GetHDRSrv().GetAddressOf());
     m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
 
     // Dispatch horizontal blur pass
@@ -286,33 +241,6 @@ void Game::Render()
 
 }
 
-void Game::SetupLightsForRender() {
-    Light light;
-    light.Enabled = static_cast<int>(true);
-    light.LightType = PointLight;
-    light.Color = XMFLOAT4(Colors::Green);
-    light.SpotAngle = XMConvertToRadians(45.0f);
-    light.ConstantAttenuation = 1.0f;
-    light.LinearAttenuation = .1f;
-    light.QuadraticAttenuation = 0.01f;
-
-    XMFLOAT4 LightPosition(0.0f, 2.0f, -4.0f, 1.0f);
-    light.Position = LightPosition;
-    XMVECTOR LightDirection = XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
-    LightDirection = XMVector3Normalize(LightDirection);
-    XMStoreFloat4(&light.Direction, LightDirection);
-
-    LightPropertiesConstantBuffer lightProperties;
-    lightProperties.EyePosition = m_camera->GetCameraPosition();
-    lightProperties.Lights[0] = light;
-
-    light.Position = XMFLOAT4(0.0f, 0.5f, 2.0f, 1.0f);
-    light.Color = XMFLOAT4(Colors::Purple);
-    lightProperties.Lights[1] = light;
-
-    m_d3dContext->UpdateSubresource(m_lightConstantBuffer.Get(), 0, nullptr, &lightProperties, 0, 0);
-}
-
 // Helper method to clear the back buffers.
 void Game::SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthStencilView* dsv, int numViews)
 {
@@ -321,7 +249,6 @@ void Game::SetRenderTargetAndClear(ID3D11RenderTargetView** rtv, ID3D11DepthSten
     m_d3dContext->ClearRenderTargetView(*rtv, &clearColour.x);
     m_d3dContext->ClearDepthStencilView(dsv, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    m_d3dContext->OMSetDepthStencilState(m_rttDepthStencilState.Get(), 0);
     m_d3dContext->OMSetRenderTargets(numViews, rtv, dsv);
 
     // Set the viewport.
@@ -571,53 +498,6 @@ void Game::CreateResources()
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
-    // Create depth stencil state
-    D3D11_DEPTH_STENCIL_DESC dsDesc;
-
-    dsDesc.DepthEnable = true;
-    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-    dsDesc.StencilEnable = true;
-    dsDesc.StencilReadMask = 0xFF;
-    dsDesc.StencilWriteMask = 0xFF;
-
-    dsDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-    dsDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-    dsDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-    dsDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-    dsDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-    dsDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-    dsDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-    dsDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-
-    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilState(&dsDesc, m_rttDepthStencilState.ReleaseAndGetAddressOf()));
-
-    // Create intermediate render texture and depth stencil
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTex;
-    D3D11_TEXTURE2D_DESC rttDesc = {};
-    rttDesc.Width = backBufferWidth;
-    rttDesc.Height = backBufferHeight;
-    rttDesc.MipLevels = 1;
-    rttDesc.ArraySize = 1;
-    rttDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    rttDesc.SampleDesc.Count = 1;
-    rttDesc.Usage = D3D11_USAGE_DEFAULT;
-    rttDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-    rttDesc.CPUAccessFlags = 0;
-    rttDesc.MiscFlags = 0;
-    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&rttDesc, nullptr, rttTex.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTex.Get(), nullptr, m_rttRenderTargetViews.ReleaseAndGetAddressOf()));
-
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTexHDR;
-    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&rttDesc, nullptr, rttTexHDR.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateRenderTargetView(rttTexHDR.Get(), nullptr, m_rttRenderTargetViewsHDR.ReleaseAndGetAddressOf()));
-
-    ComPtr<ID3D11Texture2D> rttDepthStencil;
-    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&depthStencilDesc, nullptr, rttDepthStencil.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilViews.ReleaseAndGetAddressOf()));
-
     // Create post processing Unordered Access Resource (UAV)
     Microsoft::WRL::ComPtr<ID3D11Texture2D> postProcUAVTex;
     D3D11_TEXTURE2D_DESC postProcTexDesc = {};
@@ -641,23 +521,8 @@ void Game::CreateResources()
     DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&postProcTexDesc, nullptr, postProcUAVTex.GetAddressOf()));
     DX::ThrowIfFailed(m_d3dDevice->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_postProcUnorderedAccessView.ReleaseAndGetAddressOf()));
 
-    // Create SRVs of render textures
-    ComPtr<ID3D11Resource> geometryPassResource;
-    m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
-    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(geometryPassResource.Get(), nullptr, m_geometryPassSrv.ReleaseAndGetAddressOf()));
-
-    ComPtr<ID3D11Resource> geometryPassHDRResource;
-    m_rttRenderTargetViewsHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
-    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, m_geometryPassHDRSrv.ReleaseAndGetAddressOf()));
-
-    ComPtr<ID3D11Resource> depthResource;
-    m_rttDepthStencilViews->GetResource(depthResource.ReleaseAndGetAddressOf());
-    D3D11_SHADER_RESOURCE_VIEW_DESC sr_desc = {};
-    sr_desc.Format = DXGI_FORMAT_R32_FLOAT;
-    sr_desc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    sr_desc.Texture2D.MostDetailedMip = 0;
-    sr_desc.Texture2D.MipLevels = -1;
-    DX::ThrowIfFailed(m_d3dDevice->CreateShaderResourceView(depthResource.Get(), &sr_desc, m_depthSrv.ReleaseAndGetAddressOf()));
+    geometryPass = new RenderPipelineGeometryPass(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, XMINT2(m_outputWidth, m_outputHeight));
+    geometryPass->Initialise();
 }
 
 void Game::InitialiseImGui(HWND hwnd)
@@ -753,27 +618,10 @@ void Game::CreateConstantBuffers() {
     // Create the constant buffer
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    HRESULT hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_constantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return;
-
-    // Create the light constant buffer
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(LightPropertiesConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_lightConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return;
-
-    bd.Usage = D3D11_USAGE_DEFAULT;
     bd.ByteWidth = sizeof(BloomConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
-    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_bloomConstantBuffer.GetAddressOf());
+    HRESULT hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_bloomConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
 
