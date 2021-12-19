@@ -73,96 +73,26 @@ void Game::Render()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     ImGuizmo::BeginFrame();
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
     ID3D11UnorderedAccessView* nullUav = nullptr;
     ID3D11ShaderResourceView* nullSrv = nullptr;
 
     /***********************************************
     MARKING SCHEME: Special Effects Pipeline
-    DESCRIPTION:	Render to texture, Post processing effects applied, Render texture to
-					quad via ImGui image.
+    DESCRIPTION:	Render to texture, Post processing effects applied, Render final
+					texture to quad via ImGui image.
     ***********************************************/
-
     geometryPass->Render();
-
-	//
-    // Depth Of Field pass
-    //
-    // Update GPU with Gaussian blur cbuffer
-    static DepthOfFieldConstantBuffer dofcb = { 25.0f, 8.0f, 25.0f, m_camera->GetFarPlane(), m_outputWidth, m_outputHeight, 3.5f };
-    dofcb.farPlaneDepth = m_camera->GetFarPlane();
-    dofcb.resolution[0] = m_outputWidth;
-    dofcb.resolution[1] = m_outputHeight;
-    m_d3dContext->UpdateSubresource(m_depthOfFieldConstantBuffer.Get(), 0, nullptr, &dofcb, 0, 0);
-    m_d3dContext->CSSetConstantBuffers(0, 1, m_depthOfFieldConstantBuffer.GetAddressOf());
-
-    // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, geometryPass->GetSrv().GetAddressOf());
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
-
-    // Dispatch horizontal blur pass
-    m_d3dContext->CSSetShader(m_depthOfFieldComputeShader->GetComputeShader(), nullptr, 0); 
-    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
-
-    // Unbind textures after Dispatch
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
-    m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
-
-    //
-    // Bloom pass
-    //
-    // Update GPU with Gaussian blur cbuffer
-    static BloomConstantBuffer gbcb = { 25.0f, 8.0f, 25.0f, 0.0f };
-    m_d3dContext->UpdateSubresource(m_bloomConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
-    m_d3dContext->CSSetConstantBuffers(0, 1, m_bloomConstantBuffer.GetAddressOf());
-
-    // Pass textures to compute shader
-    m_d3dContext->CSSetShaderResources(0, 1, geometryPass->GetSrv().GetAddressOf());
-    m_d3dContext->CSSetShaderResources(1, 1, geometryPass->GetHDRSrv().GetAddressOf());
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
-
-    // Dispatch horizontal blur pass
-    m_d3dContext->CSSetShader(m_bloomComputeShader->GetComputeShader(), nullptr, 0); 
-    m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
-
-    // Unbind textures after Dispatch
-    m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
-    m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
-    m_d3dContext->CSSetShaderResources(1, 1, &nullSrv);
-
-    //
-    // Image filter pass
-    //
-    static ImageFilterConstantBuffer ifcb = { 0, 0.0f, 0.0f, 0.0f, m_viewportSize.x, m_viewportSize.y, 0.0f, 0.0f };
-    if(ifcb.filterIntensity > 0) {
-        ifcb.time = m_timer.GetTotalSeconds();
-        ifcb.resolution[0] = m_outputWidth;
-        ifcb.resolution[1] = m_outputHeight;
-
-        m_d3dContext->UpdateSubresource(m_imageFilterConstantBuffer.Get(), 0, nullptr, &ifcb, 0, 0);
-        m_d3dContext->CSSetConstantBuffers(0, 1, m_imageFilterConstantBuffer.GetAddressOf());
-
-        // Pass textures to compute shader
-        m_d3dContext->CSSetUnorderedAccessViews(0, 1, m_postProcUnorderedAccessView.GetAddressOf(), nullptr);
-
-        // Dispatch horizontal blur pass
-        m_d3dContext->CSSetShader(m_imageFilterComputeShader->GetComputeShader(), nullptr, 0);
-        m_d3dContext->Dispatch(m_outputWidth / 8, m_outputHeight / 8, 1);
-
-        // Unbind textures after Dispatch
-        m_d3dContext->CSSetUnorderedAccessViews(0, 1, &nullUav, nullptr);
-        m_d3dContext->CSSetShaderResources(0, 1, &nullSrv);
-        m_d3dContext->CSSetShaderResources(1, 1, &nullSrv);
-    }
+    dofPass->Render();
+    bloomPass->Render();
+    imgFilterPass->Render();
 
     //
 	// Gui render pass to back buffer
 	//
     // Bind render target to back buffer
     SetRenderTargetAndClear(m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
-
-    // Render dockspace
-    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
     // Render content in ImGui window
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2());
@@ -175,11 +105,7 @@ void Game::Render()
         }
         
         // Create SRV and render to ImGui window
-        ComPtr<ID3D11Resource> renderResource;
-        m_postProcUnorderedAccessView->GetResource(renderResource.ReleaseAndGetAddressOf());
-        ComPtr<ID3D11ShaderResourceView> renderSrv;
-        m_d3dDevice->CreateShaderResourceView(renderResource.Get(), nullptr, renderSrv.ReleaseAndGetAddressOf());
-        ImGui::Image(renderSrv.Get(), m_viewportSize);
+        ImGui::Image(dofPass->GetUavSrv().Get(), m_viewportSize);
 
         // Set up ImGuizmo
         ImGuizmo::SetDrawlist();
@@ -198,31 +124,6 @@ void Game::Render()
             ImGui::PushID(i);
             m_gameObjects[i]->RenderGUIControls(m_d3dDevice.Get(), m_camera.get());
             ImGui::PopID();
-        }
-    ImGui::End();
-
-    ImGui::Begin("Post Processing Controls", (bool*)0, ImGuiWindowFlags_AlwaysAutoResize);
-	    if (ImGui::CollapsingHeader("Depth of Field")) {
-	        ImGui::DragFloat("Size", &dofcb.size, 0.1f, 0.0f, 50.0f);
-	        ImGui::DragFloat("Quality", &dofcb.quality, 0.1f, 0.0f, 50.0f);
-	        ImGui::DragFloat("Directions", &dofcb.directions, 0.1f, 0.0f, 50.0f);
-            ImGui::DragFloat("Depth", &dofcb.depth, 0.1f, 0.0f, 50.0f);
-
-	    }
-
-		if(ImGui::CollapsingHeader("Bloom")) {
-            ImGui::DragFloat("Size", &gbcb.size, 0.1f, 0.0f, 50.0f);
-            ImGui::DragFloat("Quality", &gbcb.quality, 0.1f, 0.0f, 50.0f);
-            ImGui::DragFloat("Directions", &gbcb.directions, 0.1f, 0.0f, 50.0f);
-		}
-
-        if (ImGui::CollapsingHeader("Image Filters")) {
-            const char* items[] = { "Invert", "Greyscale", "Film Grain", "Vignette" };
-            static int selection = ifcb.filterType;
-            ImGui::Combo("Filter Type", &selection, items, 4);
-            ifcb.filterType = selection;
-
-            ImGui::DragFloat("Intensity", &ifcb.filterIntensity, 0.01f, 0.0f, 1.0f);
         }
     ImGui::End();
 
@@ -498,8 +399,18 @@ void Game::CreateResources()
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
-    geometryPass = new RenderPipelineGeometryPass(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, XMINT2(m_outputWidth, m_outputHeight));
+    XMINT2 vpSize(backBufferWidth, backBufferHeight);
+    geometryPass = new RenderPipelineGeometryPass(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, vpSize);
     geometryPass->Initialise();
+
+    dofPass = new RenderPipelineDepthOfFieldPass(m_d3dDevice, m_d3dContext, vpSize, m_camera, geometryPass);
+    dofPass->Initialise();
+
+    bloomPass = new RenderPipelineBloomPass(m_d3dDevice, m_d3dContext, vpSize, geometryPass);
+    bloomPass->Initialise();
+
+    imgFilterPass = new RenderPipelineImageFilterPass(m_d3dDevice, m_d3dContext, vpSize, geometryPass);
+    imgFilterPass->Initialise();
 }
 
 void Game::InitialiseImGui(HWND hwnd)
@@ -592,23 +503,7 @@ void Game::InitialiseImGui(HWND hwnd)
 }
 
 void Game::CreateConstantBuffers() {
-    // Create the constant buffer
-    D3D11_BUFFER_DESC bd = {};
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(BloomConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    HRESULT hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_bloomConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return;
-
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ImageFilterConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_imageFilterConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return;
+    
 }
 
 void Game::CreateCameras(int width, int height) {
@@ -647,9 +542,6 @@ void Game::CreateGameObjects() {
     quad->InitShader(m_d3dDevice.Get(), L"VertexShader", L"PixelShader", layout, numElements);
 
     m_gameObjects.push_back(quad);
-
-    m_bloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
-    m_imageFilterComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"ImageFilterShader");
 }
 
 void Game::OnDeviceLost()

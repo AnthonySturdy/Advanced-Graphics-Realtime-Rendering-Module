@@ -1,20 +1,21 @@
 #include "pch.h"
 #include "RenderPipelineStage.h"
 
+Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> RenderPipelineStage::m_unorderedAccessView;
+Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> RenderPipelineStage::m_unorderedAccessSRV;
+
+
 RenderPipelineStage::RenderPipelineStage(Microsoft::WRL::ComPtr<ID3D11Device> _device,
                                          Microsoft::WRL::ComPtr<ID3D11DeviceContext> _context,
                                          DirectX::XMINT2 resolution)
 	: device(_device), context(_context), m_resolution(resolution) {}
 
-void RenderPipelineStage::TryInitialiseUAV() {
-	if (m_postProcUnorderedAccessView != nullptr)
-		return;
-
+void RenderPipelineStage::InitialiseUAV() {
     // Create post processing Unordered Access Resource (UAV)
     Microsoft::WRL::ComPtr<ID3D11Texture2D> postProcUAVTex;
     D3D11_TEXTURE2D_DESC postProcTexDesc = {};
     postProcTexDesc.Width = m_resolution.x;
-    postProcTexDesc.Height = m_resolution.x;
+    postProcTexDesc.Height = m_resolution.y;
     postProcTexDesc.MipLevels = 1;
     postProcTexDesc.ArraySize = 1;
     postProcTexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -31,10 +32,10 @@ void RenderPipelineStage::TryInitialiseUAV() {
     postProcUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
     postProcUAVDesc.Texture2D.MipSlice = 0;
 
-    DX::ThrowIfFailed(device->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_postProcUnorderedAccessView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(device->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_unorderedAccessView.ReleaseAndGetAddressOf()));
 
     // Create SRV and render to ImGui window
 	Microsoft::WRL::ComPtr<ID3D11Resource> renderResource;
-    m_postProcUnorderedAccessView->GetResource(renderResource.ReleaseAndGetAddressOf());
+    m_unorderedAccessView->GetResource(renderResource.ReleaseAndGetAddressOf());
     device->CreateShaderResourceView(renderResource.Get(), nullptr, m_unorderedAccessSRV.ReleaseAndGetAddressOf());
 }

@@ -84,6 +84,8 @@
     <ClInclude Include="RenderPipelineStage.h" />
     <ClInclude Include="RenderPipelineGeometryPass.h" />
     <ClInclude Include="RenderPipelineDepthOfFieldPass.h" />
+    <ClInclude Include="RenderPipelineBloomPass.h" />
+    <ClInclude Include="RenderPipelineImageFilterPass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -138,6 +140,8 @@
     <ClCompile Include="RenderPipelineStage.cpp" />
     <ClCompile Include="RenderPipelineGeometryPass.cpp" />
     <ClCompile Include="RenderPipelineDepthOfFieldPass.cpp" />
+    <ClCompile Include="RenderPipelineBloomPass.cpp" />
+    <ClCompile Include="RenderPipelineImageFilterPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

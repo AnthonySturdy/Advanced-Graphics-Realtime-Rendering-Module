@@ -1,10 +1,10 @@
 #pragma once
 class RenderPipelineStage {
 private:
-	static Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_postProcUnorderedAccessView;
+	static Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_unorderedAccessView;
 	static Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_unorderedAccessSRV;
 
-	void TryInitialiseUAV();
+	void InitialiseUAV();
 
 protected:
 	Microsoft::WRL::ComPtr<ID3D11Device> device;
@@ -12,9 +12,12 @@ protected:
 	DirectX::XMINT2	m_resolution;
 
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> GetUnorderedAccessView() {
-		TryInitialiseUAV();
-		return m_postProcUnorderedAccessView;
+		if (m_unorderedAccessView == nullptr)
+			InitialiseUAV();
+		
+		return m_unorderedAccessView;
 	}
+	static void ResetUnorderedAccessView() { m_unorderedAccessView.Reset(); }
 
 public:
 	RenderPipelineStage(Microsoft::WRL::ComPtr<ID3D11Device> _device, 
@@ -24,4 +27,6 @@ public:
 
 	virtual void Initialise() = 0;
 	virtual void Render() = 0;
+
+	const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& GetUavSrv() const { return m_unorderedAccessSRV; }
 };

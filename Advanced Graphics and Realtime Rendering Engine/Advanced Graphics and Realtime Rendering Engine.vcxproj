@@ -205,8 +205,10 @@
     <ClInclude Include="GameObject_Quad.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="RenderPipelineBloomPass.h" />
     <ClInclude Include="RenderPipelineDepthOfFieldPass.h" />
     <ClInclude Include="RenderPipelineGeometryPass.h" />
+    <ClInclude Include="RenderPipelineImageFilterPass.h" />
     <ClInclude Include="RenderPipelineStage.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="StepTimer.h" />
@@ -281,8 +283,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="RenderPipelineBloomPass.cpp" />
     <ClCompile Include="RenderPipelineDepthOfFieldPass.cpp" />
     <ClCompile Include="RenderPipelineGeometryPass.cpp" />
+    <ClCompile Include="RenderPipelineImageFilterPass.cpp" />
     <ClCompile Include="RenderPipelineStage.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>

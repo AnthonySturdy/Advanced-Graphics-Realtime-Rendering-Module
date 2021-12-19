@@ -10,6 +10,9 @@
 #include "ComputeShader.h"
 #include "RenderPipelineStage.h"
 #include "RenderPipelineGeometryPass.h"
+#include "RenderPipelineDepthOfFieldPass.h"
+#include "RenderPipelineBloomPass.h"
+#include "RenderPipelineImageFilterPass.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.
@@ -85,11 +88,8 @@ private:
     std::shared_ptr<Camera> m_camera;
     std::vector<std::shared_ptr<GameObject>> m_gameObjects;
 
-    std::shared_ptr<ComputeShader> m_bloomComputeShader;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_bloomConstantBuffer;
-
-    std::shared_ptr<ComputeShader> m_imageFilterComputeShader;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_imageFilterConstantBuffer;
-
     RenderPipelineGeometryPass* geometryPass;
+    RenderPipelineDepthOfFieldPass* dofPass;
+    RenderPipelineBloomPass* bloomPass;
+    RenderPipelineImageFilterPass* imgFilterPass;
 };
