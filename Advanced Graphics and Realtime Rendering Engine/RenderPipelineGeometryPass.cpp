@@ -9,7 +9,7 @@ RenderPipelineGeometryPass::RenderPipelineGeometryPass(Microsoft::WRL::ComPtr<ID
     : RenderPipelineStage(_device, _context), m_gameObjects(gameObjects), m_camera(camera), m_resolution(renderResolution) {}
 
 void RenderPipelineGeometryPass::Initialise() {
-    // Create intermediate render texture and depth stencil
+    // Create render texture and depth stencil
     Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTex;
     D3D11_TEXTURE2D_DESC rttDesc = {};
     rttDesc.Width = m_resolution.x;
@@ -23,11 +23,11 @@ void RenderPipelineGeometryPass::Initialise() {
     rttDesc.CPUAccessFlags = 0;
     rttDesc.MiscFlags = 0;
     DX::ThrowIfFailed(device->CreateTexture2D(&rttDesc, nullptr, rttTex.GetAddressOf()));
-    DX::ThrowIfFailed(device->CreateRenderTargetView(rttTex.Get(), nullptr, m_rttRenderTargetViews.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(device->CreateRenderTargetView(rttTex.Get(), nullptr, m_renderTargetView.ReleaseAndGetAddressOf()));
 
     Microsoft::WRL::ComPtr<ID3D11Texture2D> rttTexHDR;
     DX::ThrowIfFailed(device->CreateTexture2D(&rttDesc, nullptr, rttTexHDR.GetAddressOf()));
-    DX::ThrowIfFailed(device->CreateRenderTargetView(rttTexHDR.Get(), nullptr, m_rttRenderTargetViewsHDR.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(device->CreateRenderTargetView(rttTexHDR.Get(), nullptr, m_renderTargetViewHDR.ReleaseAndGetAddressOf()));
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> rttDepthStencil;
     D3D11_TEXTURE2D_DESC depthStencilDesc = {};
@@ -49,16 +49,16 @@ void RenderPipelineGeometryPass::Initialise() {
     depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     depthStencilViewDesc.Texture2D.MipSlice = 0;
-    DX::ThrowIfFailed(device->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_rttDepthStencilView.ReleaseAndGetAddressOf()));
+    DX::ThrowIfFailed(device->CreateDepthStencilView(rttDepthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
     // Create SRVs of render textures
     Microsoft::WRL::ComPtr<ID3D11Resource> geometryPassResource;
-    m_rttRenderTargetViews->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
-    DX::ThrowIfFailed(device->CreateShaderResourceView(geometryPassResource.Get(), nullptr, m_geometryPassSrv.ReleaseAndGetAddressOf()));
+    m_renderTargetView->GetResource(geometryPassResource.ReleaseAndGetAddressOf());
+    DX::ThrowIfFailed(device->CreateShaderResourceView(geometryPassResource.Get(), nullptr, m_renderTargetSRV.ReleaseAndGetAddressOf()));
 
     Microsoft::WRL::ComPtr<ID3D11Resource> geometryPassHDRResource;
-    m_rttRenderTargetViewsHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
-    DX::ThrowIfFailed(device->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, m_geometryPassHDRSrv.ReleaseAndGetAddressOf()));
+    m_renderTargetViewHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
+    DX::ThrowIfFailed(device->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, m_hdrRenderTargetSRV.ReleaseAndGetAddressOf()));
 
     // Create constant buffers
     D3D11_BUFFER_DESC bd = {};
@@ -80,20 +80,19 @@ void RenderPipelineGeometryPass::Initialise() {
 }
 
 void RenderPipelineGeometryPass::Render() {
-    ID3D11RenderTargetView* rtvs[2];
-    rtvs[0] = m_rttRenderTargetViews.Get();
-    rtvs[1] = m_rttRenderTargetViewsHDR.Get();
-
     // Clear views
     const DirectX::XMFLOAT4 tpClear = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
     const DirectX::XMFLOAT4 clearColour = m_camera->GetBackgroundColour();
 
-	context->ClearRenderTargetView(m_rttRenderTargetViews.Get(), &clearColour.x);
-    context->ClearRenderTargetView(m_rttRenderTargetViewsHDR.Get(), &tpClear.x);
-    context->ClearDepthStencilView(m_rttDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	context->ClearRenderTargetView(m_renderTargetView.Get(), &clearColour.x);
+    context->ClearRenderTargetView(m_renderTargetViewHDR.Get(), &tpClear.x);
+    context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     // Bind RTVs and depth stencil
-    context->OMSetRenderTargets(2, rtvs, m_rttDepthStencilView.Get());
+    ID3D11RenderTargetView* rtvs[2];
+    rtvs[0] = m_renderTargetView.Get();
+    rtvs[1] = m_renderTargetViewHDR.Get();
+    context->OMSetRenderTargets(2, rtvs, m_depthStencilView.Get());
 
     // Set the viewport.
     CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_resolution.x), static_cast<float>(m_resolution.y), 0.0f, 1.0f);
@@ -132,7 +131,7 @@ void RenderPipelineGeometryPass::Render() {
         gameObject->Render(context.Get());
     }
 
-    // Unbind RTVs
+    // Unbind RTVs and DSV
     ID3D11RenderTargetView* nullRTV[2] = { nullptr, nullptr };  // Unbind render targets for use in next pass
     ID3D11DepthStencilView* nullDSV = nullptr;
     context->OMSetRenderTargets(2, &nullRTV[0], nullDSV);
