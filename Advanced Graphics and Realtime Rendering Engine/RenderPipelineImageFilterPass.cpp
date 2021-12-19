@@ -26,7 +26,7 @@ void RenderPipelineImageFilterPass::Render() {
 
     static ImageFilterConstantBuffer ifcb = { 0, 0.0f, 0.0f, 0.0f, static_cast<float>(m_resolution.x), static_cast<float>(m_resolution.y), 0.0f, 0.0f };
     if (ifcb.filterIntensity > 0) {
-        ifcb.time = static_cast<float>(rand());
+        ifcb.time = static_cast<float>(rand() / 100.0f);
         ifcb.resolution[0] = static_cast<float>(m_resolution.x);
         ifcb.resolution[1] = static_cast<float>(m_resolution.y);
 

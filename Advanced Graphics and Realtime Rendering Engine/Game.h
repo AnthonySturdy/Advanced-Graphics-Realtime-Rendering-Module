@@ -88,8 +88,10 @@ private:
     std::shared_ptr<Camera> m_camera;
     std::vector<std::shared_ptr<GameObject>> m_gameObjects;
 
-    RenderPipelineGeometryPass* geometryPass;
-    RenderPipelineDepthOfFieldPass* dofPass;
-    RenderPipelineBloomPass* bloomPass;
-    RenderPipelineImageFilterPass* imgFilterPass;
+    std::vector<std::shared_ptr<RenderPipelineStage>> renderPipelineQueue;
+
+    //RenderPipelineGeometryPass* geometryPass;
+    //RenderPipelineDepthOfFieldPass* dofPass;
+    //RenderPipelineBloomPass* bloomPass;
+    //RenderPipelineImageFilterPass* imgFilterPass;
 };

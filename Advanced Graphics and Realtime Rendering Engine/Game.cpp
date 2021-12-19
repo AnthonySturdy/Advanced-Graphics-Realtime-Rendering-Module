@@ -83,10 +83,8 @@ void Game::Render()
     DESCRIPTION:	Render to texture, Post processing effects applied, Render final
 					texture to quad via ImGui image.
     ***********************************************/
-    geometryPass->Render();
-    dofPass->Render();
-    bloomPass->Render();
-    imgFilterPass->Render();
+    for (auto& rps : renderPipelineQueue)
+        rps->Render();
 
     //
 	// Gui render pass to back buffer
@@ -105,7 +103,7 @@ void Game::Render()
         }
         
         // Create SRV and render to ImGui window
-        ImGui::Image(dofPass->GetUavSrv().Get(), m_viewportSize);
+        ImGui::Image(renderPipelineQueue[0]->GetUavSrv().Get(), m_viewportSize);
 
         // Set up ImGuizmo
         ImGuizmo::SetDrawlist();
@@ -399,18 +397,17 @@ void Game::CreateResources()
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
+    // Initialise render pipeline
+    renderPipelineQueue.clear();
+
     XMINT2 vpSize(backBufferWidth, backBufferHeight);
-    geometryPass = new RenderPipelineGeometryPass(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, vpSize);
-    geometryPass->Initialise();
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineGeometryPass>(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, vpSize));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineDepthOfFieldPass>(m_d3dDevice, m_d3dContext, vpSize, m_camera, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineBloomPass>(m_d3dDevice, m_d3dContext, vpSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineImageFilterPass>(m_d3dDevice, m_d3dContext, vpSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
 
-    dofPass = new RenderPipelineDepthOfFieldPass(m_d3dDevice, m_d3dContext, vpSize, m_camera, geometryPass);
-    dofPass->Initialise();
-
-    bloomPass = new RenderPipelineBloomPass(m_d3dDevice, m_d3dContext, vpSize, geometryPass);
-    bloomPass->Initialise();
-
-    imgFilterPass = new RenderPipelineImageFilterPass(m_d3dDevice, m_d3dContext, vpSize, geometryPass);
-    imgFilterPass->Initialise();
+    for (auto& rps : renderPipelineQueue)
+        rps->Initialise();
 }
 
 void Game::InitialiseImGui(HWND hwnd)

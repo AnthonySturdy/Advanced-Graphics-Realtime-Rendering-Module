@@ -5,7 +5,7 @@
 
 class RenderPipelineImageFilterPass : public RenderPipelineStage {
 private:
-	RenderPipelineGeometryPass* m_geometryPass;
+	RenderPipelineGeometryPass*				m_geometryPass;
 
 	std::shared_ptr<ComputeShader>			m_imageFilterComputeShader;
 	Microsoft::WRL::ComPtr<ID3D11Buffer>	m_imageFilterConstantBuffer;
