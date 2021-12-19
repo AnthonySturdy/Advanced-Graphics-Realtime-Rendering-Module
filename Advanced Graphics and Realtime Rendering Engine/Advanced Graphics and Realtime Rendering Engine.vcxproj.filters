@@ -83,6 +83,7 @@
     <ClInclude Include="GameObject_Quad.h" />
     <ClInclude Include="RenderPipelineStage.h" />
     <ClInclude Include="RenderPipelineGeometryPass.h" />
+    <ClInclude Include="RenderPipelineDepthOfFieldPass.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
@@ -136,6 +137,7 @@
     <ClCompile Include="GameObject_Quad.cpp" />
     <ClCompile Include="RenderPipelineStage.cpp" />
     <ClCompile Include="RenderPipelineGeometryPass.cpp" />
+    <ClCompile Include="RenderPipelineDepthOfFieldPass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resource.rc" />

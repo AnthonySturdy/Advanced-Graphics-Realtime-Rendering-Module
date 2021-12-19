@@ -73,9 +73,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView>      m_renderTargetView;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_depthStencilView;
 
-    
-    Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>   m_postProcUnorderedAccessView;  // Post processing passes read/write, final image rendered to viewport
-
     ImVec2                                              m_viewportSize;
 
     // Rendering loop timer.
@@ -87,9 +84,6 @@ private:
     // Scene
     std::shared_ptr<Camera> m_camera;
     std::vector<std::shared_ptr<GameObject>> m_gameObjects;
-
-    std::shared_ptr<ComputeShader> m_depthOfFieldComputeShader;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_depthOfFieldConstantBuffer;
 
     std::shared_ptr<ComputeShader> m_bloomComputeShader;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_bloomConstantBuffer;

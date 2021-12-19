@@ -498,29 +498,6 @@ void Game::CreateResources()
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     DX::ThrowIfFailed(m_d3dDevice->CreateDepthStencilView(depthStencil.Get(), &depthStencilViewDesc, m_depthStencilView.ReleaseAndGetAddressOf()));
 
-    // Create post processing Unordered Access Resource (UAV)
-    Microsoft::WRL::ComPtr<ID3D11Texture2D> postProcUAVTex;
-    D3D11_TEXTURE2D_DESC postProcTexDesc = {};
-    postProcTexDesc.Width = backBufferWidth; 
-    postProcTexDesc.Height = backBufferHeight;
-    postProcTexDesc.MipLevels = 1;
-    postProcTexDesc.ArraySize = 1;
-    postProcTexDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    postProcTexDesc.SampleDesc.Count = 1;
-    postProcTexDesc.SampleDesc.Quality = 0;
-    postProcTexDesc.Usage = D3D11_USAGE_DEFAULT;
-    postProcTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-    postProcTexDesc.CPUAccessFlags = 0;
-    postProcTexDesc.MiscFlags = 0;
-
-    D3D11_UNORDERED_ACCESS_VIEW_DESC postProcUAVDesc;
-    postProcUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-    postProcUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
-    postProcUAVDesc.Texture2D.MipSlice = 0;
-
-    DX::ThrowIfFailed(m_d3dDevice->CreateTexture2D(&postProcTexDesc, nullptr, postProcUAVTex.GetAddressOf()));
-    DX::ThrowIfFailed(m_d3dDevice->CreateUnorderedAccessView(postProcUAVTex.Get(), &postProcUAVDesc, m_postProcUnorderedAccessView.ReleaseAndGetAddressOf()));
-
     geometryPass = new RenderPipelineGeometryPass(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, XMINT2(m_outputWidth, m_outputHeight));
     geometryPass->Initialise();
 }
@@ -632,14 +609,6 @@ void Game::CreateConstantBuffers() {
     hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_imageFilterConstantBuffer.GetAddressOf());
     if (FAILED(hr))
         return;
-
-    bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(DepthOfFieldConstantBuffer);
-    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    bd.CPUAccessFlags = 0;
-    hr = m_d3dDevice->CreateBuffer(&bd, nullptr, m_depthOfFieldConstantBuffer.GetAddressOf());
-    if (FAILED(hr))
-        return;
 }
 
 void Game::CreateCameras(int width, int height) {
@@ -681,7 +650,6 @@ void Game::CreateGameObjects() {
 
     m_bloomComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"BloomShader");
     m_imageFilterComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"ImageFilterShader");
-    m_depthOfFieldComputeShader = std::make_unique<ComputeShader>(m_d3dDevice.Get(), L"DepthOfFieldShader");
 }
 
 void Game::OnDeviceLost()

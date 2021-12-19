@@ -6,7 +6,6 @@ class RenderPipelineGeometryPass : public RenderPipelineStage {
 private:
 	const std::vector<std::shared_ptr<GameObject>>&		m_gameObjects;
 	const std::shared_ptr<Camera>&						m_camera;
-	const DirectX::XMINT2								m_resolution;
 																					
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetView;		// Geometry render
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetViewHDR;	// HDR extracted during geometry render

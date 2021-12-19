@@ -6,7 +6,7 @@ RenderPipelineGeometryPass::RenderPipelineGeometryPass(Microsoft::WRL::ComPtr<ID
                                                        const std::vector<std::shared_ptr<GameObject>>& gameObjects,
                                                        const std::shared_ptr<Camera>& camera,
                                                        DirectX::XMINT2 renderResolution)
-    : RenderPipelineStage(_device, _context), m_gameObjects(gameObjects), m_camera(camera), m_resolution(renderResolution) {}
+    : RenderPipelineStage(_device, _context, renderResolution), m_gameObjects(gameObjects), m_camera(camera) {}
 
 void RenderPipelineGeometryPass::Initialise() {
     // Create render texture and depth stencil
