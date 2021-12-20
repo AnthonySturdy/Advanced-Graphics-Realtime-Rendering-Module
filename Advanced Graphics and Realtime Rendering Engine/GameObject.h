@@ -21,6 +21,7 @@ public:
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
 	std::shared_ptr<Shader> GetShader() { return m_shader; }
 	DirectX::XMFLOAT4X4 GetWorld() { return m_world; }
+	Mesh* GetMesh() { return m_mesh.get(); }
 
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }
 	void SetWorld(DirectX::XMFLOAT4X4 w) { m_world = w; }

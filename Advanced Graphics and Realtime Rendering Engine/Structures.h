@@ -135,3 +135,9 @@ struct DepthOfFieldConstantBuffer {
 	float depth;
 	float _padding;
 };
+
+struct ShadowMappingConstantBuffer{
+	DirectX::XMMATRIX view;
+	DirectX::XMMATRIX projection;
+	DirectX::XMFLOAT4 position;
+};

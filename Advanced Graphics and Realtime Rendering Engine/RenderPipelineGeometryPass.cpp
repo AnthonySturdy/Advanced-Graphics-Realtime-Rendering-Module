@@ -60,6 +60,19 @@ void RenderPipelineGeometryPass::Initialise() {
     m_renderTargetViewHDR->GetResource(geometryPassHDRResource.ReleaseAndGetAddressOf());
     DX::ThrowIfFailed(device->CreateShaderResourceView(geometryPassHDRResource.Get(), nullptr, m_hdrRenderTargetSRV.ReleaseAndGetAddressOf()));
 
+    // Create rasteriser state
+    D3D11_RASTERIZER_DESC drawingRenderStateDesc;
+    ZeroMemory(&drawingRenderStateDesc, sizeof(D3D11_RASTERIZER_DESC));
+    drawingRenderStateDesc.CullMode = D3D11_CULL_BACK;
+    drawingRenderStateDesc.FillMode = D3D11_FILL_SOLID;
+    drawingRenderStateDesc.DepthClipEnable = true; 
+    DX::ThrowIfFailed(
+        device->CreateRasterizerState(
+            &drawingRenderStateDesc,
+            m_renderState.ReleaseAndGetAddressOf()
+        )
+    );
+
     // Create constant buffers
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
@@ -96,7 +109,8 @@ void RenderPipelineGeometryPass::Render() {
 
     // Set the viewport.
     CD3D11_VIEWPORT viewport(0.0f, 0.0f, static_cast<float>(m_resolution.x), static_cast<float>(m_resolution.y), 0.0f, 1.0f);
-    context->RSSetViewports(1, &viewport);
+    context->RSSetState(m_renderState.Get());
+	context->RSSetViewports(1, &viewport);
 
     SetupLightsForRender();
 

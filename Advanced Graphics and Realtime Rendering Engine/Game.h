@@ -13,6 +13,7 @@
 #include "RenderPipelineDepthOfFieldPass.h"
 #include "RenderPipelineBloomPass.h"
 #include "RenderPipelineImageFilterPass.h"
+#include "RenderPipelineShadowPass.h"
 
 // A basic game implementation that creates a D3D11 device and
 // provides a game loop.

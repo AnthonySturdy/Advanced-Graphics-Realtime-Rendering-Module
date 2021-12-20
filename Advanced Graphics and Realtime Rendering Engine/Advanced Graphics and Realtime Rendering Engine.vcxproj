@@ -209,6 +209,7 @@
     <ClInclude Include="RenderPipelineDepthOfFieldPass.h" />
     <ClInclude Include="RenderPipelineGeometryPass.h" />
     <ClInclude Include="RenderPipelineImageFilterPass.h" />
+    <ClInclude Include="RenderPipelineShadowPass.h" />
     <ClInclude Include="RenderPipelineStage.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="StepTimer.h" />
@@ -287,6 +288,7 @@
     <ClCompile Include="RenderPipelineDepthOfFieldPass.cpp" />
     <ClCompile Include="RenderPipelineGeometryPass.cpp" />
     <ClCompile Include="RenderPipelineImageFilterPass.cpp" />
+    <ClCompile Include="RenderPipelineShadowPass.cpp" />
     <ClCompile Include="RenderPipelineStage.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>

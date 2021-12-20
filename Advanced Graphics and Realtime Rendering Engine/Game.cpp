@@ -83,7 +83,7 @@ void Game::Render()
     DESCRIPTION:	Render to texture, Post processing effects applied, Render final
 					texture to quad via ImGui image.
     ***********************************************/
-    for (auto& rps : renderPipelineQueue)
+    for (const auto& rps : renderPipelineQueue)
         rps->Render();
 
     //
@@ -103,7 +103,8 @@ void Game::Render()
         }
         
         // Create SRV and render to ImGui window
-        ImGui::Image(renderPipelineQueue[0]->GetUavSrv().Get(), m_viewportSize);
+        auto shadowSrv = static_cast<RenderPipelineShadowPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::SHADOW].get())->GetSrv().Get();
+        ImGui::Image(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::SHADOW]->GetUavSrv().Get(), m_viewportSize);
 
         // Set up ImGuizmo
         ImGuizmo::SetDrawlist();
@@ -400,11 +401,13 @@ void Game::CreateResources()
     // Initialise render pipeline
     renderPipelineQueue.clear();
 
-    XMINT2 vpSize(backBufferWidth, backBufferHeight);
-    renderPipelineQueue.push_back(std::make_shared<RenderPipelineGeometryPass>(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, vpSize));
-    renderPipelineQueue.push_back(std::make_shared<RenderPipelineDepthOfFieldPass>(m_d3dDevice, m_d3dContext, vpSize, m_camera, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
-    renderPipelineQueue.push_back(std::make_shared<RenderPipelineBloomPass>(m_d3dDevice, m_d3dContext, vpSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
-    renderPipelineQueue.push_back(std::make_shared<RenderPipelineImageFilterPass>(m_d3dDevice, m_d3dContext, vpSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[0].get())));
+    XMINT2 shadowMapSize(500, 500);
+    XMINT2 renderSize(backBufferWidth, backBufferHeight);
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineShadowPass>(m_d3dDevice, m_d3dContext, shadowMapSize, m_gameObjects));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineGeometryPass>(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, renderSize));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineDepthOfFieldPass>(m_d3dDevice, m_d3dContext, renderSize, m_camera, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineBloomPass>(m_d3dDevice, m_d3dContext, renderSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineImageFilterPass>(m_d3dDevice, m_d3dContext, renderSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
 
     for (auto& rps : renderPipelineQueue)
         rps->Initialise();

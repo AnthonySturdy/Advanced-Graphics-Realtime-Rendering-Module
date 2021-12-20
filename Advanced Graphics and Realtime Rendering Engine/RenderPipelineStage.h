@@ -20,6 +20,14 @@ protected:
 	static void ResetUnorderedAccessView() { m_unorderedAccessView.Reset(); }
 
 public:
+	enum RENDER_PASS {
+		SHADOW = 0,
+		GEOMETRY,
+		DEPTH_OF_FIELD,
+		BLOOM,
+		IMAGE_FILTER
+	};
+
 	RenderPipelineStage(Microsoft::WRL::ComPtr<ID3D11Device> _device, 
 						Microsoft::WRL::ComPtr<ID3D11DeviceContext> _context,
 						DirectX::XMINT2	resolution);

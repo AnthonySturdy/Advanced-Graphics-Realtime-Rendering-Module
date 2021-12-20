@@ -10,6 +10,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetView;		// Geometry render
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetViewHDR;	// HDR extracted during geometry render
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView>      m_depthStencilView;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState>		m_renderState;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_renderTargetSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>    m_hdrRenderTargetSRV;
