@@ -148,7 +148,7 @@ void RenderPipelineShadowPass::Render() {
         static const DirectX::XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
         static const DirectX::XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
         smcb.mView = XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)); // Point light at (20, 15, 20), pointed at the origin
-        smcb.mWorld = DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(gameObject->GetTransform()));
+        smcb.mWorld = DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(gameObject->GetWorld()));
         smcb.mProjection = DirectX::XMMatrixOrthographicRH(
             DirectX::XM_PI * 1.8f,
             DirectX::XM_PI * 1.8f,

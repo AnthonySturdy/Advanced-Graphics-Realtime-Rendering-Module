@@ -17,10 +17,13 @@ public:
 
 	virtual void RenderGUIControls(ID3D11Device* device, Camera* camera);
 
-	DirectX::XMFLOAT4X4* GetTransform() { return &m_world; }
+	DirectX::XMFLOAT4X4* GetWorld() { return &m_world; }
+	DirectX::XMFLOAT3 GetPosition() const { return m_position; }
+
+	MaterialPropertiesConstantBuffer GetMaterial() const { return m_material; }
 	ID3D11Buffer* GetMaterialConstantBuffer() { return m_materialConstantBuffer.Get(); }
+
 	std::shared_ptr<Shader> GetShader() { return m_shader; }
-	DirectX::XMFLOAT4X4 GetWorld() { return m_world; }
 	Mesh* GetMesh() { return m_mesh.get(); }
 
 	void SetPosition(DirectX::XMFLOAT3 pos) { m_position = pos; }

@@ -118,7 +118,7 @@ void RenderPipelineGeometryPass::Render() {
     // Render Geometry
     for (const auto& gameObject : m_gameObjects) {
         // get the game object world transform
-        DirectX::XMMATRIX mGO = XMLoadFloat4x4(gameObject->GetTransform());
+        DirectX::XMMATRIX mGO = XMLoadFloat4x4(gameObject->GetWorld());
 
         // Get the game object's shader
         Shader* shader = gameObject->GetShader().get();
@@ -179,8 +179,13 @@ void RenderPipelineGeometryPass::SetupLightsForRender() {
     lightProperties.EyePosition = m_camera->GetCameraPosition();
     lightProperties.Lights[0] = light;
 
-    light.Position = DirectX::XMFLOAT4(0.0f, 0.5f, 2.0f, 1.0f);
-    light.Color = DirectX::XMFLOAT4(DirectX::Colors::Purple);
+    DirectX::XMFLOAT3 goPos = m_gameObjects[0]->GetPosition();
+    DirectX::XMFLOAT4 goEmis4 = m_gameObjects[0]->GetMaterial().Material.Emissive;
+    DirectX::XMFLOAT3 goEmis3 = DirectX::XMFLOAT3(goEmis4.x, goEmis4.y, goEmis4.z);
+    light.Position = DirectX::XMFLOAT4(goPos.x, goPos.y, goPos.z, 0.0f);
+    light.Color = m_gameObjects[0]->GetMaterial().Material.Emissive;
+    DirectX::XMStoreFloat(&light.ConstantAttenuation, DirectX::XMVector3Length(DirectX::XMLoadFloat3(&goEmis3)));
+    light.ConstantAttenuation /= 3.5f;
     lightProperties.Lights[1] = light;
 
     context->UpdateSubresource(m_lightConstantBuffer.Get(), 0, nullptr, &lightProperties, 0, 0);
