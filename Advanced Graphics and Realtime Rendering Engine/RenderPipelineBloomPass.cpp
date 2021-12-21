@@ -26,7 +26,7 @@ void RenderPipelineBloomPass::Render() {
     ID3D11ShaderResourceView* nullSrv = nullptr;
 
     // Update GPU with Gaussian blur cbuffer
-    static BloomConstantBuffer gbcb = { 25.0f, 8.0f, 45.0f, 0.0f };
+    static BloomConstantBuffer gbcb = { 45.0f, 8.0f, 25, 0.0f };
     context->UpdateSubresource(m_bloomConstantBuffer.Get(), 0, nullptr, &gbcb, 0, 0);
     context->CSSetConstantBuffers(0, 1, m_bloomConstantBuffer.GetAddressOf());
 
