@@ -249,7 +249,7 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
     }
 
 	/***********************************************
-	MARKING SCHEME: Shadow Mapping
+	MARKING SCHEME: Shadow Mapping (for more, see 'RenderPipelineShadowPass.cpp')
 	DESCRIPTION:	Calculate shadow map tex coords, sample light's depth map,
 					compare to normalised light depth for lighting value.
 	REFERENCE:		https://docs.microsoft.com/en-us/windows/uwp/gaming/implementing-depth-buffers-for-shadow-mapping
