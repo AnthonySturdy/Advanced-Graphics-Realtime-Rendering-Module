@@ -107,7 +107,7 @@ void RenderPipelineShadowPass::Initialise() {
     // Create constant buffer
     D3D11_BUFFER_DESC bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;
-    bd.ByteWidth = sizeof(ConstantBuffer);
+    bd.ByteWidth = sizeof(ShadowMappingConstantBuffer);
     bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     bd.CPUAccessFlags = 0;
 
@@ -142,19 +142,18 @@ void RenderPipelineShadowPass::Render() {
 
     for(const auto& gameObject : m_gameObjects) {
         // Update constant buffer
-        static ConstantBuffer smcb = {};
+        static ShadowMappingConstantBuffer smcb = {};
 
         static const DirectX::XMVECTORF32 eye = { 10.0f, 10.0f, 10.0f, 0.0f };
         static const DirectX::XMVECTORF32 at = { 0.0f, 0.0f, 0.0f, 0.0f };
         static const DirectX::XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
         smcb.mView = XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)); // Point light at (20, 15, 20), pointed at the origin
         smcb.mWorld = DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(gameObject->GetTransform()));
-        smcb.vOutputColor = DirectX::XMFLOAT4(DirectX::Colors::White);
         smcb.mProjection = DirectX::XMMatrixOrthographicRH(
-            DirectX::XM_PI * 1.2f,
-            DirectX::XM_PI * 1.2f,
-            3.f,
-            20.f
+            DirectX::XM_PI * 1.8f,
+            DirectX::XM_PI * 1.8f,
+            1.f,
+            12.f
         );
 
         context->UpdateSubresource(

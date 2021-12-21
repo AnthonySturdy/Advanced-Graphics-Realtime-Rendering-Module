@@ -14,6 +14,7 @@ struct ConstantBuffer {
 	DirectX::XMMATRIX mView;
 	DirectX::XMMATRIX mProjection;
 	DirectX::XMFLOAT4 vOutputColor;
+	DirectX::XMFLOAT4 camEyePos;
 };
 
 struct _Material {
@@ -137,7 +138,7 @@ struct DepthOfFieldConstantBuffer {
 };
 
 struct ShadowMappingConstantBuffer{
-	DirectX::XMMATRIX view;
-	DirectX::XMMATRIX projection;
-	DirectX::XMFLOAT4 position;
+	DirectX::XMMATRIX mWorld;
+	DirectX::XMMATRIX mView;
+	DirectX::XMMATRIX mProjection;
 };

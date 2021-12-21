@@ -5,8 +5,9 @@ RenderPipelineGeometryPass::RenderPipelineGeometryPass(Microsoft::WRL::ComPtr<ID
                                                        Microsoft::WRL::ComPtr<ID3D11DeviceContext> _context, 
                                                        const std::vector<std::shared_ptr<GameObject>>& gameObjects,
                                                        const std::shared_ptr<Camera>& camera,
-                                                       DirectX::XMINT2 renderResolution)
-    : RenderPipelineStage(_device, _context, renderResolution), m_gameObjects(gameObjects), m_camera(camera) {}
+                                                       DirectX::XMINT2 renderResolution,
+														RenderPipelineShadowPass* shadowPass)
+    : RenderPipelineStage(_device, _context, renderResolution), m_gameObjects(gameObjects), m_camera(camera), m_shadowPass(shadowPass) {}
 
 void RenderPipelineGeometryPass::Initialise() {
     // Create render texture and depth stencil
@@ -131,16 +132,23 @@ void RenderPipelineGeometryPass::Render() {
         cb1.mView = XMMatrixTranspose(m_camera->CalculateViewMatrix());
         cb1.mProjection = XMMatrixTranspose(m_camera->CalculateProjectionMatrix());
         cb1.vOutputColor = DirectX::XMFLOAT4(0, 0, 0, 0);
+        cb1.camEyePos = m_camera->GetCameraPosition();
         context->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb1, 0, 0);
 
         // Render the cube
         context->VSSetShader(shader->GetVertexShader().Get(), nullptr, 0);
         context->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+    	context->VSSetConstantBuffers(1, 1, m_shadowPass->GetConstantBuffer().GetAddressOf());
 
         context->PSSetShader(shader->GetPixelShader().Get(), nullptr, 0);
         context->PSSetConstantBuffers(2, 1, m_lightConstantBuffer.GetAddressOf());
         ID3D11Buffer* materialCB = gameObject->GetMaterialConstantBuffer();
         context->PSSetConstantBuffers(1, 1, &materialCB);
+
+        // Bind shadow depth view
+        context->PSSetShaderResources(3, 1, m_shadowPass->GetSrv().GetAddressOf());
+
+        context->PSSetSamplers(1, 1, m_shadowPass->GetSamplerState().GetAddressOf());
 
         gameObject->Render(context.Get());
     }

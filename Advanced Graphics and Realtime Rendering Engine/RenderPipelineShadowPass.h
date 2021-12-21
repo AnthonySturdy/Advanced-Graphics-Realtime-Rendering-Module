@@ -24,4 +24,6 @@ public:
 	void Render() override;
 
 	const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& GetSrv() const { return m_depthShaderResourceView; }
+	const Microsoft::WRL::ComPtr<ID3D11Buffer>& GetConstantBuffer() const { return m_constantBuffer; }
+	const Microsoft::WRL::ComPtr<ID3D11SamplerState>& GetSamplerState() const { return m_samplerState; }
 };

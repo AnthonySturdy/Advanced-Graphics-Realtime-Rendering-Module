@@ -3,7 +3,14 @@ cbuffer ConstantBuffer : register(b0) {
     matrix View;
     matrix Projection;
     float4 vOutputColor;
+    float4 camEyePos;
 }
+
+cbuffer ShadowMappingConstantBuffer : register(b1) {
+    matrix lWorld;
+    matrix lView;
+    matrix lProjection;
+};
 
 struct VS_INPUT {
     float4 Pos : POSITION;
@@ -20,6 +27,9 @@ struct PS_INPUT {
     float2 Tex : TEXCOORD0;
     float3 Tan : TANGENT;
     float3 Binorm : BINORMAL;
+    float4 LightSpacePos : POSITION1;
+    float3 LightRay : NORMAL1;
+    float3 EyeRay : NORMAL2;
 };
 
 PS_INPUT VS(VS_INPUT input) {
@@ -28,7 +38,17 @@ PS_INPUT VS(VS_INPUT input) {
     output.worldPos = output.Pos;
     output.Pos = mul(output.Pos, View);
     output.Pos = mul(output.Pos, Projection);
-    
+
+
+    float4 lightSpacePos = mul(output.worldPos, lView);
+    lightSpacePos = mul(lightSpacePos, lProjection);
+    output.LightSpacePos = lightSpacePos;
+
+    output.LightRay = float3(10.0f, 10.0f, 10.0f) - output.worldPos.xyz;
+
+    output.EyeRay = camEyePos.xyz - output.worldPos.xyz;
+
+
     output.Tex = input.Tex;
     
     output.Norm = mul(input.Norm, (float3x3)World);

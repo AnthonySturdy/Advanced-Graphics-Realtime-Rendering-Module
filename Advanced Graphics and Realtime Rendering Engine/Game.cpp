@@ -104,7 +104,7 @@ void Game::Render()
         
         // Create SRV and render to ImGui window
         auto shadowSrv = static_cast<RenderPipelineShadowPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::SHADOW].get())->GetSrv().Get();
-        ImGui::Image(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::SHADOW]->GetUavSrv().Get(), m_viewportSize);
+        ImGui::Image(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY]->GetUavSrv().Get(), m_viewportSize);
 
         // Set up ImGuizmo
         ImGuizmo::SetDrawlist();
@@ -401,10 +401,10 @@ void Game::CreateResources()
     // Initialise render pipeline
     renderPipelineQueue.clear();
 
-    XMINT2 shadowMapSize(500, 500);
+    XMINT2 shadowMapSize(1024, 1024);
     XMINT2 renderSize(backBufferWidth, backBufferHeight);
     renderPipelineQueue.push_back(std::make_shared<RenderPipelineShadowPass>(m_d3dDevice, m_d3dContext, shadowMapSize, m_gameObjects));
-    renderPipelineQueue.push_back(std::make_shared<RenderPipelineGeometryPass>(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, renderSize));
+    renderPipelineQueue.push_back(std::make_shared<RenderPipelineGeometryPass>(m_d3dDevice, m_d3dContext, m_gameObjects, m_camera, renderSize, static_cast<RenderPipelineShadowPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::SHADOW].get())));
     renderPipelineQueue.push_back(std::make_shared<RenderPipelineDepthOfFieldPass>(m_d3dDevice, m_d3dContext, renderSize, m_camera, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
     renderPipelineQueue.push_back(std::make_shared<RenderPipelineBloomPass>(m_d3dDevice, m_d3dContext, renderSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
     renderPipelineQueue.push_back(std::make_shared<RenderPipelineImageFilterPass>(m_d3dDevice, m_d3dContext, renderSize, static_cast<RenderPipelineGeometryPass*>(renderPipelineQueue[RenderPipelineStage::RENDER_PASS::GEOMETRY].get())));
@@ -508,7 +508,7 @@ void Game::CreateConstantBuffers() {
 
 void Game::CreateCameras(int width, int height) {
     // Create camera
-    m_camera = std::make_shared<Camera>(XMFLOAT4(-2.0f, 2.0f, -2.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
+    m_camera = std::make_shared<Camera>(XMFLOAT4(-2.0f, 5.0f, -5.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f),
                                         Camera::CAMERA_TYPE::PERSPECTIVE,
                                         width / (float)height,
                                         DirectX::XM_PIDIV2,

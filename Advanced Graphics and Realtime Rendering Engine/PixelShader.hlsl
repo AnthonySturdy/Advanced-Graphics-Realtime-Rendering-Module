@@ -1,14 +1,9 @@
-cbuffer ConstantBuffer : register(b0) {
-	matrix World;
-	matrix View;
-	matrix Projection;
-	float4 vOutputColor;
-}
-
 Texture2D txDiffuse : register(t0);
 Texture2D txNormal : register(t1);
 Texture2D txParallax : register(t2);
+Texture2D<float> shadowMapDepth : register(t3);
 SamplerState samLinear : register(s0);
+SamplerComparisonState shadowSampler: register(s1);
 
 #define MAX_LIGHTS 2
 // Light types.
@@ -67,12 +62,15 @@ cbuffer LightProperties : register(b2) {
 
 //--------------------------------------------------------------------------------------
 struct PS_INPUT {
-	float4 Pos : SV_POSITION;
-	float4 worldPos : POSITION;
-	float3 Norm : NORMAL;
-	float2 Tex : TEXCOORD0;
+    float4 Pos : SV_POSITION;
+    float4 worldPos : POSITION;
+    float3 Norm : NORMAL;
+    float2 Tex : TEXCOORD0;
     float3 Tan : TANGENT;
     float3 Binorm : BINORMAL;
+    float4 LightSpacePos : POSITION1;
+    float3 LightRay : NORMAL1;
+    float3 EyeRay : NORMAL2;
 };
 
 struct PS_OUTPUT {
@@ -251,6 +249,33 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
     }
 
 	/***********************************************
+	MARKING SCHEME: Shadow Mapping
+	DESCRIPTION:	Calculate shadow map tex coords, sample light's depth map,
+					compare to normalised light depth for lighting value.
+	REFERENCE:		https://docs.microsoft.com/en-us/windows/uwp/gaming/implementing-depth-buffers-for-shadow-mapping
+	***********************************************/
+	// Compute texture coordinates for the current point's location on the shadow map.
+    float2 shadowTexCoords;
+    shadowTexCoords.x = 0.5f + (IN.LightSpacePos.x / IN.LightSpacePos.w * 0.5f);
+    shadowTexCoords.y = 0.5f - (IN.LightSpacePos.y / IN.LightSpacePos.w * 0.5f);
+    float pixelDepth = IN.LightSpacePos.z / IN.LightSpacePos.w;
+
+    float lighting = 1;
+	// Check if the pixel texture coordinate is in the view frustum of the 
+	// light before doing any shadow work
+    if ((saturate(shadowTexCoords.x) == shadowTexCoords.x) &&
+		(saturate(shadowTexCoords.y) == shadowTexCoords.y) &&
+		(pixelDepth > 0)) {
+
+		// Sample the shadow map depth value from the depth texture using the sampler at the projected texture coordinate location.
+        float depthValue = shadowMapDepth.Sample(samLinear, shadowTexCoords);
+        float lightDepthValue = IN.LightSpacePos.z / IN.LightSpacePos.w;
+        lighting = depthValue / lightDepthValue;
+		if(lighting < 0.999f)
+            lighting = 0.7f;
+    }
+
+	/***********************************************
 	MARKING SCHEME: Normal Mapping
 	DESCRIPTION: Map sampling, normal value decompression, transformation to tangent space
 	***********************************************/
@@ -274,7 +299,7 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
-    float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
+    float4 finalColor = (emissive + (ambient - (1.0f - lighting)) + diffuse + specular) * texColor;
 
     finalColor.w = IN.Pos.w;
 
@@ -283,12 +308,4 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
     output.HDR = float4(emissive.rgb, 1.0f);
 
     return output;
-}
-
-//--------------------------------------------------------------------------------------
-// PSSolid - render a solid color
-//--------------------------------------------------------------------------------------
-float4 PSSolid(PS_INPUT input) : SV_Target
-{
-	return vOutputColor;
 }

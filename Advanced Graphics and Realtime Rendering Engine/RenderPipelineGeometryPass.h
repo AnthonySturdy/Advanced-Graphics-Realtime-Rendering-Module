@@ -1,11 +1,13 @@
 #pragma once
 #include "GameObject.h"
 #include "RenderPipelineStage.h"
+#include "RenderPipelineShadowPass.h"
 
 class RenderPipelineGeometryPass : public RenderPipelineStage {
 private:
 	const std::vector<std::shared_ptr<GameObject>>&		m_gameObjects;
 	const std::shared_ptr<Camera>&						m_camera;
+	RenderPipelineShadowPass*							m_shadowPass;
 																					
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetView;		// Geometry render
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>		m_renderTargetViewHDR;	// HDR extracted during geometry render
@@ -25,7 +27,8 @@ public:
 								Microsoft::WRL::ComPtr<ID3D11DeviceContext> _context,
 								const std::vector<std::shared_ptr<GameObject>>& gameObjects,
 								const std::shared_ptr<Camera>& camera,
-								DirectX::XMINT2 renderResolution);
+								DirectX::XMINT2 renderResolution,
+								RenderPipelineShadowPass* shadowPass);
 	~RenderPipelineGeometryPass() = default;
 
 	void Initialise() override;
