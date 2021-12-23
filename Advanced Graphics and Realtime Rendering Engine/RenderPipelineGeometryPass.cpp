@@ -169,7 +169,7 @@ void RenderPipelineGeometryPass::SetupLightsForRender() {
     light.LinearAttenuation = .1f;
     light.QuadraticAttenuation = 0.01f;
 
-    DirectX::XMFLOAT4 LightPosition(0.0f, 2.0f, -4.0f, 1.0f);
+    DirectX::XMFLOAT4 LightPosition(0.0f, 2.0f, 4.0f, 1.0f);
     light.Position = LightPosition;
     DirectX::XMVECTOR LightDirection = DirectX::XMVectorSet(-LightPosition.x, -LightPosition.y, -LightPosition.z, 0.0f);
     LightDirection = DirectX::XMVector3Normalize(LightDirection);
