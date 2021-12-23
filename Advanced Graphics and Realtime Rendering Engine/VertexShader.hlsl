@@ -44,11 +44,6 @@ PS_INPUT VS(VS_INPUT input) {
     lightSpacePos = mul(lightSpacePos, lProjection);
     output.LightSpacePos = lightSpacePos;
 
-    output.LightRay = float3(10.0f, 10.0f, 10.0f) - output.worldPos.xyz;
-
-    output.EyeRay = camEyePos.xyz - output.worldPos.xyz;
-
-
     output.Tex = input.Tex;
     
     output.Norm = mul(input.Norm, (float3x3)World);

@@ -8,7 +8,7 @@ cbuffer Parameters : register(b0)
     float directions; // BLUR DIRECTIONS 
     float farPlaneDepth;
     int2 resolution;
-    float depth;
+    float falloff;
     float _padding;
 }
 
@@ -26,7 +26,7 @@ void CS(uint3 DTid : SV_DispatchThreadID)
     const float midPixelDepth = render[resolution / 2].w / farPlaneDepth;   // Depth of pixel at centre of screen
     const float curPixelDepth = render[DTid.xy].w / farPlaneDepth;  // Depth of current pixel
 
-    float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / depth;  // Depth diff between mid and cur. pixel
+    float targetDepth = ((curPixelDepth - midPixelDepth) / midPixelDepth) / falloff;  // Depth diff between mid and cur. pixel
     if (targetDepth < 0)    // If foreground should be blurred
         targetDepth = abs(targetDepth) * 4.0f;
     targetDepth = saturate(targetDepth);

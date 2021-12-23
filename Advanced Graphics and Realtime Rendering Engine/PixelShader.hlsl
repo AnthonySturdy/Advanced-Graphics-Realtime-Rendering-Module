@@ -69,8 +69,6 @@ struct PS_INPUT {
     float3 Tan : TANGENT;
     float3 Binorm : BINORMAL;
     float4 LightSpacePos : POSITION1;
-    float3 LightRay : NORMAL1;
-    float3 EyeRay : NORMAL2;
 };
 
 struct PS_OUTPUT {
@@ -260,7 +258,6 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
     shadowTexCoords.y = 0.5f - (IN.LightSpacePos.y / IN.LightSpacePos.w * 0.5f);
     float pixelDepth = IN.LightSpacePos.z / IN.LightSpacePos.w;
 
-    float lighting = 1;
 	// Check if the pixel texture coordinate is in the view frustum of the 
 	// light before doing any shadow work
     if ((saturate(shadowTexCoords.x) == shadowTexCoords.x) &&
@@ -269,10 +266,11 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 
 		// Sample the shadow map depth value from the depth texture using the sampler at the projected texture coordinate location.
         float depthValue = shadowMapDepth.Sample(samLinear, shadowTexCoords);
-        float lightDepthValue = IN.LightSpacePos.z / IN.LightSpacePos.w;
-        lighting = depthValue / lightDepthValue;
+        float lighting = depthValue / pixelDepth;
+
+        const float shadowMapStrength = 0.7f;
 		if(lighting < 0.999f)
-            lighting = 0.7f;
+            shadowMultiplier = shadowMultiplier - shadowMapStrength;
     }
 
 	/***********************************************
@@ -299,7 +297,7 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 		texColor = txDiffuse.Sample(samLinear, texCoords);
 	}
 
-    float4 finalColor = (emissive + (ambient - (1.0f - lighting)) + diffuse + specular) * texColor;
+    float4 finalColor = (emissive + ambient + diffuse + specular) * texColor;
 
     finalColor.w = IN.Pos.w;
 
