@@ -18,7 +18,7 @@ void CS(uint3 DTid : SV_DispatchThreadID)
 	DESCRIPTION:	Guassian blur applied to the extracted emissive areas of the render (via separate 
 					HDR texture) and re-apply result over regular render.
 	REFERENCE:		https://learnopengl.com/Advanced-Lighting/Bloom
-					https://www.shadertoy.com/view/Xltfzj
+					https://xorshaders.weebly.com/tutorials/blur-shaders-5-part-2
 	***********************************************/
 
     const float PI2 = 6.283185f; // Pi*2

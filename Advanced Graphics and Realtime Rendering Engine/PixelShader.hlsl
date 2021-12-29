@@ -256,7 +256,7 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
     float2 shadowTexCoords;
     shadowTexCoords.x = 0.5f + (IN.LightSpacePos.x / IN.LightSpacePos.w * 0.5f);
     shadowTexCoords.y = 0.5f - (IN.LightSpacePos.y / IN.LightSpacePos.w * 0.5f);
-    float pixelDepth = IN.LightSpacePos.z / IN.LightSpacePos.w;
+    float pixelDepth = IN.LightSpacePos.z / IN.LightSpacePos.w;	// True depth from current pixel to light
 
 	// Check if the pixel texture coordinate is in the view frustum of the 
 	// light before doing any shadow work
@@ -266,7 +266,9 @@ PS_OUTPUT PS(PS_INPUT IN) : SV_TARGET
 
 		// Sample the shadow map depth value from the depth texture using the sampler at the projected texture coordinate location.
         float depthValue = shadowMapDepth.Sample(samLinear, shadowTexCoords);
-        float lighting = depthValue / pixelDepth;
+
+		// Normalise sampled depth value by true depth value
+    	float lighting = depthValue / pixelDepth;
 
         const float shadowMapStrength = 0.7f;
 		if(lighting < 0.999f)

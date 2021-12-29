@@ -19,7 +19,7 @@ void CS(uint3 DTid : SV_DispatchThreadID)
 	MARKING SCHEME: Depth of Field 
 	DESCRIPTION:	Gaussian blur applied and strength determined by
 					scene depth and what the camera is pointing at
-	REFERENCE:      https://www.shadertoy.com/view/Xltfzj
+	REFERENCE:      https://xorshaders.weebly.com/tutorials/blur-shaders-5-part-2
 	***********************************************/
 
     const float PI2 = 6.283185f; // Pi*2
