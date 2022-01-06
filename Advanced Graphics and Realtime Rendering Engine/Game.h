@@ -89,7 +89,7 @@ private:
     std::shared_ptr<Camera> m_camera;
     std::vector<std::shared_ptr<GameObject>> m_gameObjects;
 
-    std::vector<std::shared_ptr<RenderPipelineStage>> renderPipelineQueue;
+    std::vector<std::shared_ptr<RenderPipelineStage>> renderPipelineStack;
 
     //RenderPipelineGeometryPass* geometryPass;
     //RenderPipelineDepthOfFieldPass* dofPass;
