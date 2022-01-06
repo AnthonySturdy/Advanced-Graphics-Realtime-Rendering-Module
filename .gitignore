@@ -386,3 +386,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.iml
+
+# Specific
+Anthony-Sturdy_AdvancedGraphics.mp4
